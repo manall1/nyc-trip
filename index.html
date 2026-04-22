@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NYC Trip ✈️</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    :root {
+      --bg: #0e0e0e;
+      --card: #161616;
+      --border: #2a2a2a;
+      --accent: #f5c842;
+      --text: #f0ede6;
+      --muted: #7a7570;
+      --food: #e8715a;
+      --activity: #6ec6b0;
+      --sightsee: #f5c842;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 300;
+      overflow: hidden;
+    }
+
+    #app {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    /* HEADER */
+    header {
+      padding: 16px 32px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+      flex-shrink: 0;
+      z-index: 10;
+    }
+
+    .header-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .title-block h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(1.4rem, 2.5vw, 2rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+    }
+
+    .title-block h1 em {
+      font-style: italic;
+      color: var(--accent);
+    }
+
+    .title-block p {
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 0.78rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .legend {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 0.74rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* FILTER BAR */
+    #filter-bar {
+      padding: 10px 32px;
+      background: rgba(14,14,14,0.97);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+      z-index: 10;
+    }
+
+    .filter-label {
+      font-size: 0.7rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-right: 4px;
+    }
+
+    .filter-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 15px;
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      background: transparent;
+      color: var(--muted);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.74rem;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .filter-btn:hover {
+      border-color: #555;
+      color: var(--text);
+    }
+
+    .filter-btn.active[data-filter="all"] {
+      border-color: var(--text);
+      color: var(--text);
+      background: rgba(240,237,230,0.07);
+    }
+
+    .filter-btn.active[data-filter="food"] {
+      border-color: var(--food);
+      color: var(--food);
+      background: rgba(232,113,90,0.1);
+    }
+
+    .filter-btn.active[data-filter="activity"] {
+      border-color: var(--activity);
+      color: var(--activity);
+      background: rgba(110,198,176,0.1);
+    }
+
+    .filter-btn.active[data-filter="sightsee"] {
+      border-color: var(--sightsee);
+      color: var(--sightsee);
+      background: rgba(245,200,66,0.1);
+    }
+
+    /* MAP */
+    #map {
+      flex: 1;
+      z-index: 1;
+    }
+
+    .leaflet-container { background: #0e0e0e; }
+
+    /* Custom marker wrapper */
+    .pin-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      cursor: pointer;
+    }
+
+    .pin-circle {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      border: 2.5px solid rgba(255,255,255,0.3);
+      box-shadow: 0 2px 10px rgba(0,0,0,0.55);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+    }
+
+    .pin-wrapper:hover .pin-circle {
+      transform: scale(1.3);
+      box-shadow: 0 4px 18px rgba(0,0,0,0.65);
+    }
+
+    .pin-stem {
+      width: 2px;
+      height: 6px;
+      background: rgba(255,255,255,0.3);
+      margin-top: -1px;
+    }
+
+    /* POPUP OVERLAY */
+    #popup-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.55);
+      backdrop-filter: blur(5px);
+      padding: 20px;
+    }
+
+    #popup-overlay.visible {
+      display: flex;
+    }
+
+    .popup-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      max-width: 460px;
+      width: 100%;
+      overflow: hidden;
+      position: relative;
+      animation: popIn 0.2s ease;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .popup-card.food   { border-top: 3px solid var(--food); }
+    .popup-card.activity { border-top: 3px solid var(--activity); }
+    .popup-card.sightsee { border-top: 3px solid var(--sightsee); }
+
+    @keyframes popIn {
+      from { opacity: 0; transform: scale(0.93) translateY(12px); }
+      to   { opacity: 1; transform: scale(1)    translateY(0); }
+    }
+
+    .popup-close {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: rgba(0,0,0,0.55);
+      border: none;
+      color: var(--text);
+      font-size: 0.9rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      transition: background 0.15s;
+    }
+
+    .popup-close:hover { background: rgba(0,0,0,0.85); }
+
+    .popup-img {
+      width: 100%;
+      height: 210px;
+      object-fit: cover;
+      display: block;
+    }
+
+    .popup-img-placeholder {
+      width: 100%;
+      height: 210px;
+      background: linear-gradient(135deg, #1e1e1e 0%, #252525 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3.2rem;
+    }
+
+    .popup-body {
+      padding: 20px 22px 22px;
+    }
+
+    .popup-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+
+    .popup-name {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.2rem;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+
+    .tag {
+      font-size: 0.62rem;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 3px 10px;
+      border-radius: 20px;
+      flex-shrink: 0;
+      margin-top: 3px;
+    }
+
+    .tag.food     { background: rgba(232,113,90,0.15); color: var(--food); }
+    .tag.activity { background: rgba(110,198,176,0.15); color: var(--activity); }
+    .tag.sightsee { background: rgba(245,200,66,0.15);  color: var(--sightsee); }
+
+    .popup-address {
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+
+    .popup-banner {
+      background: rgba(232,113,90,0.07);
+      border: 1px solid rgba(232,113,90,0.2);
+      border-radius: 8px;
+      padding: 10px 13px;
+      font-size: 0.78rem;
+      color: #c47060;
+      line-height: 1.5;
+      margin-bottom: 11px;
+    }
+
+    .popup-banner strong { color: var(--food); }
+
+    .popup-note {
+      font-size: 0.84rem;
+      color: #8a8580;
+      line-height: 1.55;
+      margin-bottom: 16px;
+    }
+
+    .popup-note .highlight {
+      color: var(--accent);
+      font-weight: 500;
+    }
+
+    .popup-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: 14px;
+      border-top: 1px solid var(--border);
+    }
+
+    .rating {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+
+    .rating .star { color: var(--accent); }
+
+    .map-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.72rem;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      text-decoration: none;
+      padding: 6px 14px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      transition: all 0.15s ease;
+    }
+
+    .map-btn:hover { border-color: #888; color: var(--text); }
+
+    /* place count badge */
+    #count-badge {
+      font-size: 0.7rem;
+      color: var(--muted);
+      margin-left: auto;
+      letter-spacing: 0.04em;
+    }
+
+    @media (max-width: 600px) {
+      header, #filter-bar { padding-left: 16px; padding-right: 16px; }
+      .legend { display: none; }
+      #filter-bar { gap: 6px; flex-wrap: wrap; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="app">
+
+  <header>
+    <div class="header-inner">
+      <div class="title-block">
+        <h1>New York <em>City</em></h1>
+        <p>Your personal trip list &nbsp;·&nbsp; Places to hit</p>
+      </div>
+      <div class="legend">
+        <div class="legend-item"><div class="dot" style="background:var(--food)"></div> Food</div>
+        <div class="legend-item"><div class="dot" style="background:var(--activity)"></div> Activity</div>
+        <div class="legend-item"><div class="dot" style="background:var(--sightsee)"></div> Sightsee</div>
+      </div>
+    </div>
+  </header>
+
+  <div id="filter-bar">
+    <span class="filter-label">Filter</span>
+    <button class="filter-btn active" data-filter="all">All</button>
+    <button class="filter-btn" data-filter="food">
+      <span class="dot" style="background:var(--food)"></span>Food
+    </button>
+    <button class="filter-btn" data-filter="activity">
+      <span class="dot" style="background:var(--activity)"></span>Activity
+    </button>
+    <button class="filter-btn" data-filter="sightsee">
+      <span class="dot" style="background:var(--sightsee)"></span>Sightsee
+    </button>
+    <span id="count-badge">11 places</span>
+  </div>
+
+  <div id="map"></div>
+
+</div>
+
+<!-- Popup -->
+<div id="popup-overlay">
+  <div class="popup-card" id="popup-card">
+    <button class="popup-close" id="popup-close">✕</button>
+    <div id="popup-img-area"></div>
+    <div class="popup-body">
+      <div class="popup-top">
+        <div class="popup-name" id="popup-name"></div>
+        <span class="tag" id="popup-tag"></span>
+      </div>
+      <div class="popup-address" id="popup-address"></div>
+      <div id="popup-banner-area"></div>
+      <div class="popup-note" id="popup-note"></div>
+      <div class="popup-footer">
+        <div class="rating"><span class="star">★</span>&nbsp;<span id="popup-rating"></span></div>
+        <a class="map-btn" id="popup-map-btn" href="#" target="_blank">↗ Maps</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const places = [
+    {
+      id: 1,
+      category: 'food',
+      name: 'Din Tai Fung',
+      address: '1633 Broadway, Midtown Manhattan',
+      note: 'World-famous Taiwanese soup dumplings (XLB). Try the chicken dumplings & chocolate XLB for dessert. <span class="highlight">Get on the waitlist early — gets very packed.</span>',
+      rating: '4.3 · Taiwanese',
+      mapsUrl: 'https://maps.google.com/?cid=9042869628820017021',
+      img: 'https://lh3.googleusercontent.com/place-photos/AJRVUZMCNsEqmKqzXN9ZdcHNkCP5ArgNCk9gpW38GSsHZEbum-Rp72ROLifqo8tcCLobIi2fovLRm7GD7Xpdy0DX7W9Qps_SdCreCsLncI73Cy2Rqyq3k_T0fgx__iFskhhuXe7ETZs1_Ykcv5mCrA=s800-w800-h600',
+      emoji: '🥟',
+      lat: 40.7615, lng: -73.9824,
+    },
+    {
+      id: 2,
+      category: 'food',
+      name: 'Chinatown Eats',
+      address: 'Canal St area, Manhattan Chinatown',
+      note: 'Wander for bubble tea, egg tarts, and bao. <span class="highlight">Most spots are not halal</span> — stick to vegetarian options or pre-check. Good picks: egg custard tarts, scallion pancakes, mango drinks.',
+      rating: 'Explore & graze',
+      mapsUrl: 'https://maps.google.com/?q=Chinatown+NYC',
+      emoji: '🍜',
+      banner: '<strong>Halal heads-up:</strong> Most of Chinatown is not halal-certified. Check menus carefully or stick to vegetarian picks.',
+      lat: 40.7158, lng: -73.9972,
+    },
+    {
+      id: 3,
+      category: 'activity',
+      name: 'Roosevelt Island Tramway',
+      address: '254 E 60th St, Upper East Side',
+      note: 'An aerial cable car right over the East River. <span class="highlight">Do this at night</span> — the city lights are magical. Same price as the subway (~$2.90) with your MetroCard.',
+      rating: '4.7 · 🌙 Night recommended',
+      mapsUrl: 'https://maps.google.com/?cid=17296483083023729155',
+      emoji: '🚡',
+      lat: 40.7606, lng: -73.9566,
+    },
+    {
+      id: 4,
+      category: 'activity',
+      name: 'Pikchi Photobooth',
+      address: '102 Eldridge St, Chinatown / LES',
+      note: '3 themed booths: grocery store, elevator, telephone. Walk-in, no reservation needed. <span class="highlight">$12–15 for 2 strips + keychain option.</span> Open until 10pm Fri–Sat.',
+      rating: '4.8 · 📍 Chinatown',
+      mapsUrl: 'https://maps.google.com/?cid=10060015174988668270',
+      img: 'https://lh3.googleusercontent.com/place-photos/AJRVUZM7ApeCi__vum-tdOt8P_eKdMBS2d8HifuLrKw8p2JVWSf7b4jRytZAg61gTjFbd3XhUxPkUMOxSVLvMGwqSwU4C_EC1aYSpO53uDWF_yy0XYa_siz8795US2z3JmeWk-lWLBesCNdBJyHzdyQ=s800-w800-h600',
+      emoji: '📸',
+      lat: 40.7164, lng: -73.9919,
+    },
+    {
+      id: 5,
+      category: 'activity',
+      name: 'AUTOPHOTO Gallery',
+      address: '121 Orchard St, Lower East Side',
+      note: 'Vintage photobooth museum with 8+ working booths. <span class="highlight">Free entry</span>, $8–12 per booth. 5-star rated — the staff narrate the history of each booth. A must if you love photobooths. Closed Mondays.',
+      rating: '5.0 · 🎞️ LES',
+      mapsUrl: 'https://maps.google.com/?cid=7714283813248372139',
+      img: 'https://lh3.googleusercontent.com/place-photos/AJRVUZMhOJCx260ESGEYwS7dcMmyb7uA4Em9tQ5vNsoYOKDpdQh84uaUQaRMbn29Yk2xw3uHOpWPOx-Rxr9kOUrk395H6Q2zxLfEfiVVFypDVAK8_-x7_8Kzm0M-z60diam_rksmNjNFWPC94bMQsBY=s800-w800-h600',
+      emoji: '🎞️',
+      lat: 40.7207, lng: -73.9895,
+    },
+    {
+      id: 6,
+      category: 'activity',
+      name: 'NYC Ferry Ride',
+      address: 'Multiple piers, East River & Hudson',
+      note: 'Only $4.50 — best value view in the city. <span class="highlight">Take it at dusk</span> to see One World Trade lit up across the water. East River route is the most scenic. Book nothing, just show up.',
+      rating: '4.6 · $4.50 flat',
+      mapsUrl: 'https://maps.google.com/?cid=18459568455898400516',
+      emoji: '⛴️',
+      lat: 40.7030, lng: -74.0116,
+    },
+    {
+      id: 7,
+      category: 'activity',
+      name: 'SUMMIT One Vanderbilt',
+      address: '45 E 42nd St, Midtown',
+      note: 'Immersive observation experience: glass floors, balloon room, mirror infinity rooms. <span class="highlight">Book early AM for empty photo ops</span> (8–9am slot). Open until midnight most nights. Requires tickets.',
+      rating: '4.7 · Book in advance',
+      mapsUrl: 'https://maps.google.com/?cid=13577862127041110382',
+      img: 'https://lh3.googleusercontent.com/place-photos/AJRVUZNAgekSLxDI2vVyizZiwt_xvhg7Z09slRZOjVLmJp3Xi5afo-iVQE4udvzCOcV_ppN71nRwSzmqntkgwSf96EUK1zSrT3kx9AyzcHNEJ3AvB_4XirrMwkG_pw5BHOG3YnOIZF8lSYeVqhUSvg=s800-w800-h600',
+      emoji: '🏙️',
+      lat: 40.7527, lng: -73.9772,
+    },
+    {
+      id: 8,
+      category: 'activity',
+      name: 'The Edge — Hudson Yards',
+      address: '30 Hudson Yards, West Side',
+      note: 'Highest outdoor sky deck in NYC — glass floor, 360° views, Hudson River on one side & the whole skyline on the other. <span class="highlight">Sunset slot is the move.</span> Buy tickets online to skip the line.',
+      rating: '4.6 · Outdoor deck',
+      mapsUrl: 'https://maps.google.com/?cid=14024044649099225455',
+      img: 'https://lh3.googleusercontent.com/place-photos/AJRVUZOXy_YLZZLcgbAjsT3ypRVQ5iZd_bUkRT0RbWZ2hzaB9To-FHHyMqSOt7JFyog-PQX47XauR6BIu1B1zunNYOvC53A01STUnaC4SVwo1k1GlSxgXQ81gubRPVY0otLCVfQicqvn42FMZIjAves=s800-w750-h500',
+      emoji: '🌆',
+      lat: 40.7535, lng: -74.0019,
+    },
+    {
+      id: 9,
+      category: 'sightsee',
+      name: 'Brooklyn Bridge',
+      address: 'Connecting Manhattan & Brooklyn',
+      note: 'Walk the 1.3-mile pedestrian path for iconic skyline views. <span class="highlight">Go early morning for fewer crowds.</span> Pair with a DUMBO walk right after — Washington St. gives the best framed shot of the bridge.',
+      rating: '4.8 · Free · 30–45 min walk',
+      mapsUrl: 'https://maps.google.com/?cid=14347003905124695845',
+      img: 'https://lh3.googleusercontent.com/place-photos/AJRVUZMsHUdgMLRzIJbQiJ-ltmyAvUSIj2rcBY2dBitQEi_y5OXaxBh_P-NSBrQhMrjihBfMPqf5idlx_Ut4tVVCAcfFVeWW7Xw0JG8ecjmHmI84tuSTnfrmamGc0wcJw7Jo63dBk2VQskOCsp9xSg=s800-w800-h600',
+      emoji: '🌉',
+      lat: 40.7061, lng: -73.9969,
+    },
+    {
+      id: 10,
+      category: 'sightsee',
+      name: 'DUMBO, Brooklyn',
+      address: 'Washington St & Water St, Brooklyn',
+      note: "One of NYC's most photogenic neighbourhoods. The cobblestone streets frame the bridge perfectly. <span class=\"highlight\">Washington St is the shot everyone comes for.</span> Great cafés and waterfront views nearby.",
+      rating: '4.8 · Free · Pair with Bridge walk',
+      mapsUrl: 'https://maps.google.com/?q=DUMBO+Brooklyn+NYC',
+      img: 'https://lh3.googleusercontent.com/place-photos/AJRVUZMtEPjlRseze7-zp4tHtxuJiPAAq0rfKKeW3Ycu2PeM2eDfqy44W9E9oHKvIiCer2y1TEkUWJcKZSq4Ziqig9BDTe7pdByB70tHRN8rJ26G1R1psHLQCzW4iC9h1C1gJafperD0qUE2f5jLO2I=s800-w800-h600',
+      emoji: '🏛️',
+      lat: 40.7033, lng: -73.9881,
+    },
+    {
+      id: 11,
+      category: 'sightsee',
+      name: 'Canal Street',
+      address: 'Canal St, Chinatown / SoHo border',
+      note: 'The chaotic, sensory-overload heart of Chinatown. Knock-off bags, cheap phone cases, bubble tea, and street food vendors. <span class="highlight">Bring cash</span> — many vendors are cash only. Fun to wander, not really a destination.',
+      rating: '4.5 · Free · Bring cash',
+      mapsUrl: 'https://maps.google.com/?cid=5113620975249408713',
+      emoji: '🛍️',
+      lat: 40.7180, lng: -73.9996,
+    },
+  ];
+
+  const COLORS = { food: '#e8715a', activity: '#6ec6b0', sightsee: '#f5c842' };
+
+  // Map init
+  const map = L.map('map', {
+    center: [40.726, -73.984],
+    zoom: 13,
+    zoomControl: false,
+  });
+
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/">CARTO</a>',
+    maxZoom: 19,
+  }).addTo(map);
+
+  L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+  function makeIcon(place) {
+    const color = COLORS[place.category];
+    return L.divIcon({
+      className: '',
+      html: `
+        <div class="pin-wrapper">
+          <div class="pin-circle" style="background:${color};">${place.emoji}</div>
+          <div class="pin-stem"></div>
+        </div>`,
+      iconSize: [30, 36],
+      iconAnchor: [15, 36],
+      popupAnchor: [0, -36],
+    });
+  }
+
+  const markerMap = new Map();
+  places.forEach(place => {
+    const marker = L.marker([place.lat, place.lng], { icon: makeIcon(place) }).addTo(map);
+    marker.on('click', () => openPopup(place));
+    markerMap.set(place.id, { marker, place });
+  });
+
+  // Popup logic
+  const overlay   = document.getElementById('popup-overlay');
+  const card      = document.getElementById('popup-card');
+  const closeBtn  = document.getElementById('popup-close');
+
+  function openPopup(place) {
+    const color = COLORS[place.category];
+
+    card.className = `popup-card ${place.category}`;
+    document.getElementById('popup-name').textContent = place.name;
+
+    const tag = document.getElementById('popup-tag');
+    tag.textContent = place.category.charAt(0).toUpperCase() + place.category.slice(1);
+    tag.className = `tag ${place.category}`;
+
+    document.getElementById('popup-address').textContent = place.address;
+    document.getElementById('popup-note').innerHTML = place.note;
+    document.getElementById('popup-rating').textContent = place.rating;
+    document.getElementById('popup-map-btn').href = place.mapsUrl;
+
+    const imgArea = document.getElementById('popup-img-area');
+    if (place.img) {
+      imgArea.innerHTML = `
+        <img class="popup-img" src="${place.img}" alt="${place.name}"
+             onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+        <div class="popup-img-placeholder" style="display:none">${place.emoji}</div>`;
+    } else {
+      imgArea.innerHTML = `<div class="popup-img-placeholder">${place.emoji}</div>`;
+    }
+
+    const bannerArea = document.getElementById('popup-banner-area');
+    bannerArea.innerHTML = place.banner ? `<div class="popup-banner">${place.banner}</div>` : '';
+
+    overlay.classList.add('visible');
+    card.scrollTop = 0;
+  }
+
+  function closePopup() { overlay.classList.remove('visible'); }
+
+  closeBtn.addEventListener('click', closePopup);
+  overlay.addEventListener('click', e => { if (e.target === overlay) closePopup(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closePopup(); });
+
+  // Filter logic
+  let activeFilter = 'all';
+  const countBadge = document.getElementById('count-badge');
+
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      activeFilter = btn.dataset.filter;
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      let count = 0;
+      markerMap.forEach(({ marker, place }) => {
+        const show = activeFilter === 'all' || place.category === activeFilter;
+        if (show) { marker.addTo(map); count++; }
+        else { map.removeLayer(marker); }
+      });
+
+      const label = activeFilter === 'all' ? 'places' : activeFilter === 'activity' ? 'activities' : activeFilter + ' spots';
+      countBadge.textContent = `${count} ${label}`;
+    });
+  });
+</script>
+
+</body>
+</html>
