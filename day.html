@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Day Planner · NYC Trip</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:         #0f1117;
+      --card:       #1a1f2e;
+      --border:     #252d3d;
+      --border-lt:  #2d3a52;
+      --accent:     #f5c842;
+      --text:       #e8ecf3;
+      --muted:      #8b97b0;
+      --faint:      #3d4a62;
+      --food:       #e8715a;
+      --activity:   #6ec6b0;
+      --sightsee:   #f5c842;
+      --panel-w:    300px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      overflow: hidden;
+    }
+
+    #app { display: flex; flex-direction: column; height: 100vh; }
+
+    /* ── HEADER ── */
+    header {
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      flex-shrink: 0;
+    }
+
+    .back-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 0.8rem;
+      font-weight: 500;
+      letter-spacing: 0.05em;
+      transition: color 0.15s;
+      white-space: nowrap;
+    }
+
+    .back-btn:hover { color: var(--text); }
+
+    .header-title {
+      flex: 1;
+      text-align: center;
+    }
+
+    .header-title h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.25rem;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .header-title h1 em { font-style: italic; color: var(--accent); }
+
+    .header-title p {
+      font-size: 0.7rem;
+      color: var(--muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
+
+    .header-wx {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      white-space: nowrap;
+    }
+
+    .header-wx .wx-icon { font-size: 1.4rem; }
+    .header-wx .wx-temps { text-align: right; }
+    .header-wx .wx-hi { font-size: 0.9rem; font-weight: 600; display: block; }
+    .header-wx .wx-lo { font-size: 0.72rem; color: var(--muted); display: block; }
+
+    /* ── DAY TABS ── */
+    .day-tabs {
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 24px;
+      gap: 4px;
+      flex-shrink: 0;
+      overflow-x: auto;
+    }
+
+    .day-tabs::-webkit-scrollbar { height: 0; }
+
+    .day-tab {
+      padding: 10px 16px;
+      font-size: 0.73rem;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      text-decoration: none;
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+
+    .day-tab:hover { color: var(--text); }
+
+    .day-tab.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+
+    /* ── MAIN BODY ── */
+    #body {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* ── SCHEDULE ── */
+    #schedule-col {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 20px;
+    }
+
+    #schedule-col::-webkit-scrollbar { width: 4px; }
+    #schedule-col::-webkit-scrollbar-thumb { background: var(--border-lt); border-radius: 4px; }
+
+    .schedule-title {
+      font-size: 0.67rem;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    .hour-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      min-height: 56px;
+      border-top: 1px solid var(--border);
+      padding: 8px 0;
+      position: relative;
+    }
+
+    .hour-row:last-child { border-bottom: 1px solid var(--border); }
+
+    .hour-label {
+      width: 44px;
+      flex-shrink: 0;
+      font-size: 0.72rem;
+      font-weight: 500;
+      color: var(--faint);
+      padding-top: 2px;
+      letter-spacing: 0.03em;
+    }
+
+    .hour-drop {
+      flex: 1;
+      min-height: 40px;
+      border-radius: 8px;
+      padding: 4px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-content: flex-start;
+      transition: background 0.15s;
+    }
+
+    .hour-drop.drag-over {
+      background: rgba(245,200,66,0.07);
+      outline: 1px dashed rgba(245,200,66,0.3);
+    }
+
+    /* ── SCHEDULED EVENT CHIP ── */
+    .event-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 10px 5px 8px;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      font-weight: 500;
+      border: 1px solid;
+      cursor: default;
+      animation: chipIn 0.18s ease;
+    }
+
+    @keyframes chipIn {
+      from { opacity: 0; transform: scale(0.85); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+
+    .event-chip.food     { background: rgba(232,113,90,0.12); border-color: rgba(232,113,90,0.3); color: var(--food); }
+    .event-chip.activity { background: rgba(110,198,176,0.12); border-color: rgba(110,198,176,0.3); color: var(--activity); }
+    .event-chip.sightsee { background: rgba(245,200,66,0.12); border-color: rgba(245,200,66,0.3); color: var(--sightsee); }
+
+    .event-chip .chip-remove {
+      background: none;
+      border: none;
+      color: inherit;
+      opacity: 0.55;
+      cursor: pointer;
+      font-size: 0.75rem;
+      padding: 0;
+      line-height: 1;
+      transition: opacity 0.12s;
+    }
+
+    .event-chip .chip-remove:hover { opacity: 1; }
+
+    /* ── PLACES PANEL ── */
+    #places-col {
+      width: var(--panel-w);
+      flex-shrink: 0;
+      background: #13161f;
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .panel-title {
+      padding: 14px 16px 10px;
+      font-size: 0.67rem;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .panel-hint {
+      font-size: 0.65rem;
+      color: var(--faint);
+      letter-spacing: 0.03em;
+      font-weight: 400;
+      text-transform: none;
+      margin-top: 2px;
+    }
+
+    .places-list {
+      overflow-y: auto;
+      flex: 1;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .places-list::-webkit-scrollbar { width: 3px; }
+    .places-list::-webkit-scrollbar-thumb { background: var(--border-lt); border-radius: 3px; }
+
+    /* ── DRAGGABLE PLACE CARD ── */
+    .place-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 9px 12px;
+      cursor: grab;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      transition: border-color 0.15s, opacity 0.15s, transform 0.15s;
+      position: relative;
+      border-left-width: 3px;
+    }
+
+    .place-card:active { cursor: grabbing; }
+    .place-card.dragging { opacity: 0.4; transform: scale(0.97); }
+
+    .place-card.food     { border-left-color: var(--food); }
+    .place-card.activity { border-left-color: var(--activity); }
+    .place-card.sightsee { border-left-color: var(--sightsee); }
+
+    .place-card:hover { border-color: var(--border-lt); }
+
+    .place-emoji { font-size: 1.1rem; flex-shrink: 0; }
+
+    .place-info { flex: 1; min-width: 0; }
+
+    .place-name {
+      font-size: 0.8rem;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .place-cat {
+      font-size: 0.65rem;
+      color: var(--muted);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-top: 1px;
+    }
+
+    .place-sched-badge {
+      font-size: 0.62rem;
+      color: var(--accent);
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+
+    @media (max-width: 640px) {
+      #places-col { display: none; }
+      header { padding: 0 14px; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="app">
+  <header>
+    <a class="back-btn" href="index.html">← Map</a>
+    <div class="header-title">
+      <h1 id="hdr-title">New York <em>City</em></h1>
+      <p id="hdr-sub">Loading…</p>
+    </div>
+    <div class="header-wx" id="hdr-wx"></div>
+  </header>
+
+  <div class="day-tabs" id="day-tabs"></div>
+
+  <div id="body">
+    <div id="schedule-col">
+      <div class="schedule-title">Schedule — drag places from the right panel</div>
+      <div id="schedule"></div>
+    </div>
+
+    <aside id="places-col">
+      <div class="panel-title">
+        Your Places
+        <div class="panel-hint">Drag any card into a time slot ↙</div>
+      </div>
+      <div class="places-list" id="places-list"></div>
+    </aside>
+  </div>
+</div>
+
+<script>
+// ── SHARED DATA ───────────────────────────────────────────────────────────
+const places = [
+  { id:1,  category:'food',     name:'Din Tai Fung',            emoji:'🥟' },
+  { id:2,  category:'food',     name:'Chinatown Eats',          emoji:'🍜' },
+  { id:3,  category:'activity', name:'Roosevelt Island Tramway',emoji:'🚡' },
+  { id:4,  category:'activity', name:'Pikchi Photobooth',       emoji:'📸' },
+  { id:5,  category:'activity', name:'AUTOPHOTO Gallery',       emoji:'🎞️' },
+  { id:6,  category:'activity', name:'NYC Ferry Ride',          emoji:'⛴️' },
+  { id:7,  category:'activity', name:'SUMMIT One Vanderbilt',   emoji:'🏙️' },
+  { id:8,  category:'activity', name:'The Edge — Hudson Yards', emoji:'🌆' },
+  { id:9,  category:'sightsee', name:'Brooklyn Bridge',         emoji:'🌉' },
+  { id:10, category:'sightsee', name:'DUMBO, Brooklyn',         emoji:'🏛️' },
+  { id:11, category:'sightsee', name:'Canal Street',            emoji:'🛍️' },
+];
+
+const DAYS = [
+  { date:'2026-04-26', short:'Sat', label:'Saturday',  display:'Apr 26' },
+  { date:'2026-04-27', short:'Sun', label:'Sunday',    display:'Apr 27' },
+  { date:'2026-04-28', short:'Mon', label:'Monday',    display:'Apr 28' },
+  { date:'2026-04-29', short:'Tue', label:'Tuesday',   display:'Apr 29' },
+  { date:'2026-04-30', short:'Wed', label:'Wednesday', display:'Apr 30' },
+];
+
+const HOURS = ['08:00','09:00','10:00','11:00','12:00','13:00','14:00',
+               '15:00','16:00','17:00','18:00','19:00','20:00','21:00','22:00','23:00'];
+
+const WX = {
+  0:{icon:'☀️',desc:'Clear sky'},1:{icon:'🌤️',desc:'Mainly clear'},
+  2:{icon:'⛅',desc:'Partly cloudy'},3:{icon:'☁️',desc:'Overcast'},
+  45:{icon:'🌫️',desc:'Foggy'},51:{icon:'🌦️',desc:'Light drizzle'},
+  53:{icon:'🌦️',desc:'Drizzle'},55:{icon:'🌧️',desc:'Heavy drizzle'},
+  61:{icon:'🌧️',desc:'Light rain'},63:{icon:'🌧️',desc:'Rain'},
+  65:{icon:'🌧️',desc:'Heavy rain'},80:{icon:'🌦️',desc:'Showers'},
+  95:{icon:'⛈️',desc:'Thunderstorm'},
+};
+
+function wxInfo(code) {
+  if (WX[code]) return WX[code];
+  if (code <= 3)  return {icon:'⛅', desc:'Partly cloudy'};
+  if (code <= 48) return {icon:'🌫️',desc:'Foggy'};
+  if (code <= 67) return {icon:'🌧️',desc:'Rainy'};
+  if (code <= 77) return {icon:'🌨️',desc:'Snowy'};
+  if (code <= 82) return {icon:'🌦️',desc:'Showers'};
+  return {icon:'⛈️',desc:'Stormy'};
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────
+const params  = new URLSearchParams(location.search);
+const today   = params.get('date') || '2026-04-26';
+const dayInfo = DAYS.find(d => d.date === today) || DAYS[0];
+
+// Header
+document.getElementById('hdr-sub').textContent = `${dayInfo.display} · ${dayInfo.label}`;
+document.title = `${dayInfo.display} · NYC Trip`;
+
+// Day tabs
+const tabsEl = document.getElementById('day-tabs');
+DAYS.forEach(d => {
+  const a = document.createElement('a');
+  a.className = 'day-tab' + (d.date === today ? ' active' : '');
+  a.href = `day.html?date=${d.date}`;
+  a.textContent = d.display;
+  tabsEl.appendChild(a);
+});
+
+// ── STORAGE ───────────────────────────────────────────────────────────────
+const STORAGE_KEY = `nyc-schedule-${today}`;
+
+function loadSchedule() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
+  catch { return []; }
+}
+
+function saveSchedule(entries) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+}
+
+let schedule = loadSchedule(); // [{placeId, hour}]
+
+// ── RENDER SCHEDULE ───────────────────────────────────────────────────────
+const schedEl = document.getElementById('schedule');
+
+function renderSchedule() {
+  schedEl.innerHTML = '';
+
+  HOURS.forEach(hour => {
+    const row = document.createElement('div');
+    row.className = 'hour-row';
+
+    const label = document.createElement('div');
+    label.className = 'hour-label';
+    label.textContent = hour;
+
+    const drop = document.createElement('div');
+    drop.className = 'hour-drop';
+    drop.dataset.hour = hour;
+
+    // Render existing chips for this hour
+    schedule.filter(e => e.hour === hour).forEach(entry => {
+      drop.appendChild(makeChip(entry));
+    });
+
+    // Drag-over highlight
+    drop.addEventListener('dragover', e => {
+      e.preventDefault();
+      drop.classList.add('drag-over');
+    });
+    drop.addEventListener('dragleave', () => drop.classList.remove('drag-over'));
+
+    // Drop
+    drop.addEventListener('drop', e => {
+      e.preventDefault();
+      drop.classList.remove('drag-over');
+      const placeId = parseInt(e.dataTransfer.getData('placeId'), 10);
+      if (!placeId) return;
+      const entry = { placeId, hour };
+      schedule.push(entry);
+      saveSchedule(schedule);
+      drop.appendChild(makeChip(entry));
+      updateBadges();
+    });
+
+    row.appendChild(label);
+    row.appendChild(drop);
+    schedEl.appendChild(row);
+  });
+}
+
+function makeChip(entry) {
+  const place = places.find(p => p.id === entry.placeId);
+  if (!place) return document.createElement('span');
+
+  const chip = document.createElement('div');
+  chip.className = `event-chip ${place.category}`;
+  chip.innerHTML = `
+    <span>${place.emoji}</span>
+    <span>${place.name}</span>
+    <button class="chip-remove" title="Remove">×</button>
+  `;
+  chip.querySelector('.chip-remove').addEventListener('click', () => {
+    const idx = schedule.findIndex(e => e.placeId === entry.placeId && e.hour === entry.hour);
+    if (idx > -1) schedule.splice(idx, 1);
+    saveSchedule(schedule);
+    chip.remove();
+    updateBadges();
+  });
+  return chip;
+}
+
+// ── PLACES PANEL ──────────────────────────────────────────────────────────
+const listEl = document.getElementById('places-list');
+
+function renderPlaces() {
+  listEl.innerHTML = '';
+  places.forEach(p => {
+    const card = document.createElement('div');
+    card.className = `place-card ${p.category}`;
+    card.draggable = true;
+    card.dataset.placeId = p.id;
+
+    const count = schedule.filter(e => e.placeId === p.id).length;
+    card.innerHTML = `
+      <span class="place-emoji">${p.emoji}</span>
+      <div class="place-info">
+        <div class="place-name">${p.name}</div>
+        <div class="place-cat">${p.category}</div>
+      </div>
+      <span class="place-sched-badge" id="badge-${p.id}">${count > 0 ? '✓'.repeat(count) : ''}</span>
+    `;
+
+    card.addEventListener('dragstart', e => {
+      e.dataTransfer.setData('placeId', p.id);
+      card.classList.add('dragging');
+    });
+    card.addEventListener('dragend', () => card.classList.remove('dragging'));
+
+    listEl.appendChild(card);
+  });
+}
+
+function updateBadges() {
+  places.forEach(p => {
+    const badge = document.getElementById(`badge-${p.id}`);
+    if (!badge) return;
+    const count = schedule.filter(e => e.placeId === p.id).length;
+    badge.textContent = count > 0 ? '✓'.repeat(Math.min(count, 3)) : '';
+  });
+}
+
+// ── WEATHER ───────────────────────────────────────────────────────────────
+(async () => {
+  try {
+    const url =
+      'https://api.open-meteo.com/v1/forecast' +
+      '?latitude=40.7128&longitude=-74.0060' +
+      '&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,weathercode' +
+      '&timezone=America%2FNew_York' +
+      '&start_date=2026-04-26&end_date=2026-04-30' +
+      '&temperature_unit=celsius';
+    const data = await (await fetch(url)).json();
+    const idx  = data.daily.time.indexOf(today);
+    if (idx < 0) return;
+    const info = wxInfo(data.daily.weathercode[idx]);
+    const hi   = Math.round(data.daily.temperature_2m_max[idx]);
+    const lo   = Math.round(data.daily.temperature_2m_min[idx]);
+    const rain = data.daily.precipitation_probability_max[idx] ?? 0;
+    document.getElementById('hdr-wx').innerHTML = `
+      <div class="wx-icon">${info.icon}</div>
+      <div class="wx-temps">
+        <span class="wx-hi">${hi}°C</span>
+        <span class="wx-lo">${lo}°C · 💧${rain}%</span>
+      </div>`;
+  } catch { /* silent */ }
+})();
+
+// ── BOOT ──────────────────────────────────────────────────────────────────
+renderSchedule();
+renderPlaces();
+</script>
+</body>
+</html>

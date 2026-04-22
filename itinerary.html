@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Full Itinerary · NYC Trip</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:        #0f1117;
+      --card:      #1a1f2e;
+      --border:    #252d3d;
+      --border-lt: #2d3a52;
+      --accent:    #f5c842;
+      --text:      #e8ecf3;
+      --muted:     #8b97b0;
+      --faint:     #3d4a62;
+      --food:      #e8715a;
+      --activity:  #6ec6b0;
+      --sightsee:  #f5c842;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      min-height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+    }
+
+    /* ── HEADER ── */
+    header {
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 28px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .back-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 0.8rem;
+      font-weight: 500;
+      letter-spacing: 0.05em;
+      transition: color 0.15s;
+      white-space: nowrap;
+    }
+
+    .back-btn:hover { color: var(--text); }
+
+    .header-title { flex: 1; }
+
+    .header-title h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(1.2rem, 2.5vw, 1.7rem);
+      font-weight: 700;
+      line-height: 1.1;
+    }
+
+    .header-title h1 em { font-style: italic; color: var(--accent); }
+
+    .header-title p {
+      font-size: 0.72rem;
+      color: var(--muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
+
+    .clear-btn {
+      padding: 7px 14px;
+      border: 1px solid var(--border-lt);
+      border-radius: 20px;
+      background: transparent;
+      color: var(--muted);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.72rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+
+    .clear-btn:hover { border-color: var(--food); color: var(--food); }
+
+    /* ── GRID ── */
+    #grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(200px, 1fr));
+      gap: 1px;
+      background: var(--border);
+      min-height: calc(100vh - 61px);
+    }
+
+    /* ── DAY COLUMN ── */
+    .day-col {
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .day-col-header {
+      padding: 16px 16px 12px;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 61px;
+      background: var(--bg);
+      z-index: 5;
+    }
+
+    .day-col-name {
+      font-size: 0.67rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .day-col-date {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-top: 2px;
+    }
+
+    .day-col-wx {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .day-col-wx .wx-icon { font-size: 1.1rem; }
+    .day-col-wx .wx-temps { font-size: 0.75rem; color: var(--muted); }
+    .day-col-wx .wx-hi { color: var(--text); font-weight: 600; }
+
+    .day-col-link {
+      display: inline-block;
+      margin-top: 10px;
+      font-size: 0.68rem;
+      color: var(--accent);
+      text-decoration: none;
+      letter-spacing: 0.05em;
+      opacity: 0.7;
+      transition: opacity 0.15s;
+    }
+
+    .day-col-link:hover { opacity: 1; }
+
+    /* ── EVENT LIST ── */
+    .day-events {
+      padding: 12px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .empty-day {
+      text-align: center;
+      padding: 32px 12px;
+      color: var(--faint);
+      font-size: 0.78rem;
+      line-height: 1.6;
+    }
+
+    .empty-day .empty-icon { font-size: 1.8rem; display: block; margin-bottom: 8px; }
+
+    /* ── ITINERARY EVENT ── */
+    .itin-event {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-left-width: 3px;
+      border-radius: 10px;
+      padding: 10px 12px;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    .itin-event.food     { border-left-color: var(--food); }
+    .itin-event.activity { border-left-color: var(--activity); }
+    .itin-event.sightsee { border-left-color: var(--sightsee); }
+
+    .itin-time {
+      font-size: 0.68rem;
+      font-weight: 600;
+      color: var(--faint);
+      white-space: nowrap;
+      padding-top: 1px;
+      min-width: 38px;
+    }
+
+    .itin-body { flex: 1; min-width: 0; }
+
+    .itin-emoji { font-size: 1rem; }
+
+    .itin-name {
+      font-size: 0.8rem;
+      font-weight: 500;
+      line-height: 1.3;
+      margin-top: 1px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .itin-cat {
+      font-size: 0.63rem;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
+
+    .itin-cat.food     { color: var(--food); }
+    .itin-cat.activity { color: var(--activity); }
+    .itin-cat.sightsee { color: var(--sightsee); }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 900px) {
+      #grid { grid-template-columns: repeat(3, minmax(180px, 1fr)); overflow-x: auto; }
+    }
+
+    @media (max-width: 580px) {
+      #grid { grid-template-columns: repeat(2, 1fr); }
+      header { padding: 12px 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <a class="back-btn" href="index.html">← Map</a>
+  <div class="header-title">
+    <h1>Full <em>Itinerary</em></h1>
+    <p>Spring 2026 🗽 · Apr 26 – 30</p>
+  </div>
+  <button class="clear-btn" id="clear-btn">Clear All</button>
+</header>
+
+<div id="grid"></div>
+
+<script>
+const places = [
+  { id:1,  category:'food',     name:'Din Tai Fung',            emoji:'🥟' },
+  { id:2,  category:'food',     name:'Chinatown Eats',          emoji:'🍜' },
+  { id:3,  category:'activity', name:'Roosevelt Island Tramway',emoji:'🚡' },
+  { id:4,  category:'activity', name:'Pikchi Photobooth',       emoji:'📸' },
+  { id:5,  category:'activity', name:'AUTOPHOTO Gallery',       emoji:'🎞️' },
+  { id:6,  category:'activity', name:'NYC Ferry Ride',          emoji:'⛴️' },
+  { id:7,  category:'activity', name:'SUMMIT One Vanderbilt',   emoji:'🏙️' },
+  { id:8,  category:'activity', name:'The Edge — Hudson Yards', emoji:'🌆' },
+  { id:9,  category:'sightsee', name:'Brooklyn Bridge',         emoji:'🌉' },
+  { id:10, category:'sightsee', name:'DUMBO, Brooklyn',         emoji:'🏛️' },
+  { id:11, category:'sightsee', name:'Canal Street',            emoji:'🛍️' },
+];
+
+const DAYS = [
+  { date:'2026-04-26', short:'Sat', label:'Saturday',  display:'Apr 26' },
+  { date:'2026-04-27', short:'Sun', label:'Sunday',    display:'Apr 27' },
+  { date:'2026-04-28', short:'Mon', label:'Monday',    display:'Apr 28' },
+  { date:'2026-04-29', short:'Tue', label:'Tuesday',   display:'Apr 29' },
+  { date:'2026-04-30', short:'Wed', label:'Wednesday', display:'Apr 30' },
+];
+
+const WX = {
+  0:{icon:'☀️',desc:'Clear'},1:{icon:'🌤️',desc:'Mainly clear'},
+  2:{icon:'⛅',desc:'Partly cloudy'},3:{icon:'☁️',desc:'Overcast'},
+  45:{icon:'🌫️',desc:'Foggy'},51:{icon:'🌦️',desc:'Light drizzle'},
+  53:{icon:'🌦️',desc:'Drizzle'},61:{icon:'🌧️',desc:'Light rain'},
+  63:{icon:'🌧️',desc:'Rain'},80:{icon:'🌦️',desc:'Showers'},
+  95:{icon:'⛈️',desc:'Thunderstorm'},
+};
+
+function wxInfo(code) {
+  if (WX[code]) return WX[code];
+  if (code <= 3)  return {icon:'⛅',desc:'Partly cloudy'};
+  if (code <= 67) return {icon:'🌧️',desc:'Rainy'};
+  if (code <= 82) return {icon:'🌦️',desc:'Showers'};
+  return {icon:'⛈️',desc:'Stormy'};
+}
+
+function getSchedule(date) {
+  try { return JSON.parse(localStorage.getItem(`nyc-schedule-${date}`) || '[]'); }
+  catch { return []; }
+}
+
+// Build columns
+const grid = document.getElementById('grid');
+
+DAYS.forEach(d => {
+  const col = document.createElement('div');
+  col.className = 'day-col';
+
+  const hdr = document.createElement('div');
+  hdr.className = 'day-col-header';
+  hdr.innerHTML = `
+    <div class="day-col-name">${d.short} · ${d.label}</div>
+    <div class="day-col-date">${d.display}</div>
+    <div class="day-col-wx" id="col-wx-${d.date}">
+      <span style="color:var(--faint);font-size:0.75rem">Loading…</span>
+    </div>
+    <a class="day-col-link" href="day.html?date=${d.date}">Edit day →</a>
+  `;
+
+  const events = document.createElement('div');
+  events.className = 'day-events';
+
+  const sched = getSchedule(d.date);
+
+  if (sched.length === 0) {
+    events.innerHTML = `
+      <div class="empty-day">
+        <span class="empty-icon">📋</span>
+        Nothing planned yet.<br>
+        <a href="day.html?date=${d.date}" style="color:var(--accent);text-decoration:none;font-size:0.75rem">Plan this day →</a>
+      </div>`;
+  } else {
+    // Sort by hour
+    const sorted = [...sched].sort((a, b) => a.hour.localeCompare(b.hour));
+    sorted.forEach(entry => {
+      const place = places.find(p => p.id === entry.placeId);
+      if (!place) return;
+      const ev = document.createElement('div');
+      ev.className = `itin-event ${place.category}`;
+      ev.innerHTML = `
+        <div class="itin-time">${entry.hour}</div>
+        <div class="itin-body">
+          <div class="itin-emoji">${place.emoji}</div>
+          <div class="itin-name">${place.name}</div>
+          <div class="itin-cat ${place.category}">${place.category}</div>
+        </div>`;
+      events.appendChild(ev);
+    });
+  }
+
+  col.appendChild(hdr);
+  col.appendChild(events);
+  grid.appendChild(col);
+});
+
+// Weather
+(async () => {
+  try {
+    const url =
+      'https://api.open-meteo.com/v1/forecast' +
+      '?latitude=40.7128&longitude=-74.0060' +
+      '&daily=temperature_2m_max,temperature_2m_min,weathercode' +
+      '&timezone=America%2FNew_York' +
+      '&start_date=2026-04-26&end_date=2026-04-30' +
+      '&temperature_unit=celsius';
+    const data = await (await fetch(url)).json();
+
+    data.daily.time.forEach((date, i) => {
+      const el = document.getElementById(`col-wx-${date}`);
+      if (!el) return;
+      const info = wxInfo(data.daily.weathercode[i]);
+      const hi   = Math.round(data.daily.temperature_2m_max[i]);
+      const lo   = Math.round(data.daily.temperature_2m_min[i]);
+      el.innerHTML = `
+        <span class="wx-icon">${info.icon}</span>
+        <span class="wx-temps">
+          <span class="wx-hi">${hi}°C</span> / ${lo}°C
+        </span>`;
+    });
+  } catch { /* silent */ }
+})();
+
+// Clear all schedules
+document.getElementById('clear-btn').addEventListener('click', () => {
+  if (!confirm('Clear all planned events for every day?')) return;
+  DAYS.forEach(d => localStorage.removeItem(`nyc-schedule-${d.date}`));
+  location.reload();
+});
+</script>
+</body>
+</html>
