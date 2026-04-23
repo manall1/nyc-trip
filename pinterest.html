@@ -403,8 +403,14 @@ document.getElementById('p-submit').addEventListener('click', async () => {
     return;
   }
 
-  if (!url.includes('pinterest.')) {
-    errEl.textContent = 'Please enter a valid Pinterest URL.';
+  let validPin = false;
+  try {
+    const hostname = new URL(url).hostname.replace('www.', '');
+    validPin = ['pinterest.com','pinterest.co.uk','pinterest.ca','pinterest.fr',
+                'pinterest.de','pinterest.es','pinterest.it','pin.it'].includes(hostname);
+  } catch {}
+  if (!validPin) {
+    errEl.textContent = 'Please enter a valid Pinterest URL (e.g. https://pin.it/… or https://pinterest.com/…).';
     errEl.classList.add('visible');
     return;
   }
