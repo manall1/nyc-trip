@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TikTok · NYC Trip</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+  <style>
+    :root {
+      --bg:        #0f1117;
+      --card:      #1a1f2e;
+      --border:    #252d3d;
+      --border-lt: #2d3a52;
+      --accent:    #f5c842;
+      --text:      #e8ecf3;
+      --muted:     #8b97b0;
+      --faint:     #3d4a62;
+      --tiktok:    #fe2c55;
+      --tiktok2:   #25f4ee;
+      --nav-h:     46px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      min-height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+    }
+
+    /* ── TOP NAV ── */
+    .topnav {
+      height: var(--nav-h);
+      background: #0a0d14;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      gap: 6px;
+      position: sticky;
+      top: 0;
+      z-index: 200;
+    }
+    .topnav-brand {
+      font-family: 'Playfair Display', serif;
+      font-size: 0.95rem; font-weight: 700;
+      color: var(--text); text-decoration: none;
+      margin-right: 10px; white-space: nowrap;
+    }
+    .topnav-brand em { font-style: italic; color: var(--accent); }
+    .topnav-sep { width: 1px; height: 18px; background: var(--border-lt); margin: 0 6px; flex-shrink: 0; }
+    .nav-link {
+      display: flex; align-items: center; gap: 6px;
+      padding: 6px 12px; border-radius: 8px;
+      font-size: 0.75rem; font-weight: 500; letter-spacing: 0.05em;
+      color: var(--muted); text-decoration: none; transition: all 0.15s; white-space: nowrap;
+    }
+    .nav-link:hover { color: var(--text); background: rgba(255,255,255,0.05); }
+    .nav-link.active { color: var(--accent); background: rgba(245,200,66,0.08); }
+    .nav-link .nav-icon { font-size: 0.95rem; }
+
+    /* ── PAGE HEADER ── */
+    .page-header {
+      padding: 28px 32px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .page-header h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(1.5rem, 3vw, 2.2rem);
+      font-weight: 700; line-height: 1.1;
+    }
+
+    .page-header h1 em { font-style: italic; color: var(--tiktok); }
+
+    .page-header p {
+      font-size: 0.78rem; color: var(--muted); margin-top: 4px; line-height: 1.5;
+    }
+
+    .add-btn {
+      display: flex; align-items: center; gap: 7px;
+      padding: 9px 18px;
+      background: var(--tiktok);
+      border: none; border-radius: 10px;
+      color: #fff; font-family: 'DM Sans', sans-serif;
+      font-size: 0.82rem; font-weight: 600; cursor: pointer;
+      transition: opacity 0.15s; white-space: nowrap;
+    }
+
+    .add-btn:hover { opacity: 0.85; }
+
+    /* ── GRID ── */
+    #videos-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 16px;
+      padding: 24px 32px;
+    }
+
+    /* ── VIDEO CARD ── */
+    .video-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+      position: relative;
+    }
+
+    .video-card:hover {
+      transform: translateY(-3px);
+      border-color: var(--tiktok);
+      box-shadow: 0 8px 30px rgba(254,44,85,0.15);
+    }
+
+    .video-thumb {
+      width: 100%;
+      aspect-ratio: 9/16;
+      max-height: 280px;
+      object-fit: cover;
+      display: block;
+      background: linear-gradient(135deg, #1a0a12 0%, #2d0d1e 100%);
+    }
+
+    .video-thumb-placeholder {
+      width: 100%;
+      aspect-ratio: 9/16;
+      max-height: 280px;
+      background: linear-gradient(135deg, #1a0a12 0%, #2d0d1e 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.5rem;
+    }
+
+    .video-play-overlay {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%;
+      max-height: 280px;
+      aspect-ratio: 9/16;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.3);
+      opacity: 0;
+      transition: opacity 0.15s;
+      cursor: pointer;
+      text-decoration: none;
+    }
+
+    .video-card:hover .video-play-overlay { opacity: 1; }
+
+    .play-btn {
+      width: 48px; height: 48px;
+      border-radius: 50%;
+      background: var(--tiktok);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.2rem;
+      box-shadow: 0 4px 16px rgba(254,44,85,0.5);
+    }
+
+    .video-body { padding: 12px 14px 14px; flex: 1; }
+
+    .video-desc {
+      font-size: 0.8rem;
+      line-height: 1.45;
+      color: var(--text);
+      margin-bottom: 8px;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .video-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .video-person {
+      font-size: 0.68rem;
+      color: var(--tiktok2);
+      font-weight: 600;
+      letter-spacing: 0.04em;
+    }
+
+    .video-open {
+      font-size: 0.68rem;
+      color: var(--muted);
+      text-decoration: none;
+      padding: 3px 9px;
+      border: 1px solid var(--border-lt);
+      border-radius: 20px;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+
+    .video-open:hover { border-color: var(--tiktok); color: var(--tiktok); }
+
+    .video-delete {
+      position: absolute;
+      top: 8px; right: 8px;
+      background: rgba(0,0,0,0.6);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 6px;
+      color: var(--muted);
+      font-size: 0.62rem;
+      padding: 3px 8px;
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity 0.15s;
+      z-index: 5;
+    }
+
+    .video-card:hover .video-delete { opacity: 1; }
+    .video-delete:hover { color: var(--food); border-color: rgba(232,113,90,0.4); }
+
+    /* ── EMPTY STATE ── */
+    .empty-state {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 64px 32px;
+      color: var(--faint);
+    }
+    .empty-state .empty-icon { font-size: 3rem; display: block; margin-bottom: 14px; }
+    .empty-state p { font-size: 0.85rem; line-height: 1.6; }
+
+    /* ── LOADING CARD ── */
+    .loading-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      animation: shimmer 1.5s ease-in-out infinite;
+    }
+
+    @keyframes shimmer {
+      0%,100% { opacity: 0.6; }
+      50% { opacity: 1; }
+    }
+
+    /* ── MODAL ── */
+    #modal-overlay {
+      display: none;
+      position: fixed; inset: 0; z-index: 3000;
+      align-items: center; justify-content: center;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(8px);
+      padding: 20px;
+    }
+    #modal-overlay.visible { display: flex; }
+
+    .modal-card {
+      background: var(--card);
+      border: 1px solid var(--border-lt);
+      border-radius: 18px;
+      width: 100%; max-width: 400px;
+      padding: 28px; position: relative;
+      animation: popIn 0.2s ease;
+    }
+
+    @keyframes popIn {
+      from { opacity:0; transform: scale(0.93) translateY(14px); }
+      to   { opacity:1; transform: scale(1) translateY(0); }
+    }
+
+    .modal-card h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.2rem; font-weight: 700; margin-bottom: 6px;
+    }
+    .modal-card h2 em { font-style: italic; color: var(--tiktok); }
+    .modal-sub { font-size: 0.74rem; color: var(--muted); margin-bottom: 20px; line-height: 1.5; }
+    .modal-close {
+      position: absolute; top: 16px; right: 16px;
+      width: 28px; height: 28px; border-radius: 50%;
+      background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1);
+      color: var(--text); font-size: 0.8rem; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .modal-close:hover { background: rgba(0,0,0,0.8); }
+
+    .form-group { margin-bottom: 13px; }
+    .form-label {
+      display: block; font-size: 0.68rem; font-weight: 600;
+      letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px;
+    }
+    .form-input {
+      width: 100%; background: #0f1117;
+      border: 1px solid var(--border-lt); border-radius: 9px;
+      padding: 9px 13px; color: var(--text);
+      font-family: 'DM Sans', sans-serif; font-size: 0.83rem;
+      transition: border-color 0.15s; outline: none;
+    }
+    .form-input:focus { border-color: var(--tiktok); }
+    .modal-error { font-size: 0.73rem; color: var(--food); margin-bottom: 12px; display: none; }
+    .modal-error.visible { display: block; }
+    .modal-submit {
+      width: 100%; padding: 11px;
+      background: var(--tiktok); border: none; border-radius: 10px;
+      color: #fff; font-family: 'DM Sans', sans-serif;
+      font-size: 0.85rem; font-weight: 700; cursor: pointer; transition: opacity 0.15s;
+    }
+    .modal-submit:hover { opacity: 0.85; }
+    .modal-submit:disabled { opacity: 0.45; cursor: not-allowed; }
+  </style>
+</head>
+<body>
+
+<nav class="topnav">
+  <a class="topnav-brand" href="index.html">NYC <em>Trip</em></a>
+  <div class="topnav-sep"></div>
+  <a class="nav-link" href="index.html"><span class="nav-icon">🗺️</span> Map</a>
+  <a class="nav-link" href="itinerary.html"><span class="nav-icon">📋</span> Itinerary</a>
+  <a class="nav-link" href="pinterest.html"><span class="nav-icon">📌</span> Pinterest</a>
+  <a class="nav-link active" href="tiktok.html"><span class="nav-icon">🎵</span> TikTok</a>
+</nav>
+
+<div class="page-header">
+  <div>
+    <h1>TikTok <em>Inspo</em></h1>
+    <p>Save TikToks about NYC spots — tap any card to watch.</p>
+  </div>
+  <button class="add-btn" id="open-modal">🎵 Add TikTok</button>
+</div>
+
+<div id="videos-grid"></div>
+
+<!-- ADD TIKTOK MODAL -->
+<div id="modal-overlay">
+  <div class="modal-card">
+    <button class="modal-close" id="close-modal">✕</button>
+    <h2>Add a <em>TikTok</em></h2>
+    <p class="modal-sub">Paste the TikTok video URL. We'll fetch the thumbnail automatically.</p>
+
+    <div class="form-group">
+      <label class="form-label" for="t-url">TikTok URL</label>
+      <input class="form-input" id="t-url" type="url" placeholder="https://www.tiktok.com/@…/video/…">
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="t-desc">Description</label>
+      <input class="form-input" id="t-desc" type="text" placeholder="e.g. Best views in Manhattan" autocomplete="off">
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="t-person">Added by</label>
+      <input class="form-input" id="t-person" type="text" placeholder="Your name" autocomplete="off">
+    </div>
+
+    <div class="modal-error" id="t-error"></div>
+    <button class="modal-submit" id="t-submit">Save Video →</button>
+  </div>
+</div>
+
+<script>
+firebase.initializeApp({
+  apiKey: "AIzaSyCe4jMzTvSSmOnvNJwMR3ku7oP89TouXsY",
+  authDomain: "nyc-trip-71a08.firebaseapp.com",
+  databaseURL: "https://nyc-trip-71a08-default-rtdb.firebaseio.com",
+  projectId: "nyc-trip-71a08",
+  storageBucket: "nyc-trip-71a08.firebasestorage.app",
+  messagingSenderId: "770213467859",
+  appId: "1:770213467859:web:f005acc598769aebb5a626"
+});
+const db = firebase.database();
+
+const grid    = document.getElementById('videos-grid');
+const overlay = document.getElementById('modal-overlay');
+
+// ── RENDER ────────────────────────────────────────────────────────────────
+db.ref('tiktok').on('value', snapshot => {
+  grid.innerHTML = '';
+  const videos = [];
+  snapshot.forEach(child => videos.push({ key: child.key, ...child.val() }));
+
+  if (videos.length === 0) {
+    grid.innerHTML = `
+      <div class="empty-state">
+        <span class="empty-icon">🎵</span>
+        <p>No TikToks saved yet.<br>Hit <strong>Add TikTok</strong> to save NYC inspo videos.</p>
+      </div>`;
+    return;
+  }
+
+  videos.forEach(v => {
+    const card = document.createElement('div');
+    card.className = 'video-card';
+
+    const thumbHtml = v.thumbnail
+      ? `<img class="video-thumb" src="${escHtml(v.thumbnail)}" alt="thumbnail"
+              onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"
+         ><div class="video-thumb-placeholder" style="display:none">🎵</div>`
+      : `<div class="video-thumb-placeholder">🎵</div>`;
+
+    card.innerHTML = `
+      ${thumbHtml}
+      <a class="video-play-overlay" href="${escHtml(v.url)}" target="_blank" rel="noopener noreferrer">
+        <div class="play-btn">▶</div>
+      </a>
+      <button class="video-delete" data-key="${v.key}">Delete</button>
+      <div class="video-body">
+        <div class="video-desc">${escHtml(v.description || v.title || 'NYC TikTok')}</div>
+        <div class="video-meta">
+          ${v.person ? `<span class="video-person">@${escHtml(v.person)}</span>` : '<span></span>'}
+          <a class="video-open" href="${escHtml(v.url)}" target="_blank" rel="noopener noreferrer">Watch ↗</a>
+        </div>
+      </div>
+    `;
+
+    card.querySelector('.video-delete').addEventListener('click', () => {
+      if (confirm('Remove this TikTok?')) db.ref(`tiktok/${v.key}`).remove();
+    });
+
+    grid.appendChild(card);
+  });
+});
+
+// ── MODAL ─────────────────────────────────────────────────────────────────
+function openModal()  { overlay.classList.add('visible'); }
+function closeModal() {
+  overlay.classList.remove('visible');
+  ['t-url','t-desc','t-person'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('t-error').classList.remove('visible');
+  const btn = document.getElementById('t-submit');
+  btn.disabled = false;
+  btn.textContent = 'Save Video →';
+}
+
+document.getElementById('open-modal').addEventListener('click', openModal);
+document.getElementById('close-modal').addEventListener('click', closeModal);
+overlay.addEventListener('click', e => { if (e.target === overlay) closeModal(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+document.getElementById('t-submit').addEventListener('click', async () => {
+  const url    = document.getElementById('t-url').value.trim();
+  const desc   = document.getElementById('t-desc').value.trim();
+  const person = document.getElementById('t-person').value.trim();
+  const errEl  = document.getElementById('t-error');
+  const btn    = document.getElementById('t-submit');
+
+  errEl.classList.remove('visible');
+
+  if (!url) {
+    errEl.textContent = 'TikTok URL is required.';
+    errEl.classList.add('visible');
+    return;
+  }
+
+  if (!url.includes('tiktok.com')) {
+    errEl.textContent = 'Please enter a valid TikTok URL.';
+    errEl.classList.add('visible');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Fetching thumbnail…';
+
+  let thumbnail = null;
+  let title = null;
+
+  try {
+    // TikTok oEmbed — browser CORS allows this endpoint
+    const oembed = await fetch(
+      `https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`
+    ).then(r => r.json());
+    thumbnail = oembed.thumbnail_url || null;
+    title     = oembed.title || null;
+  } catch {
+    // oEmbed failed — save without thumbnail, still works
+  }
+
+  await db.ref('tiktok').push({
+    url,
+    description: desc || title || '',
+    title,
+    thumbnail,
+    person,
+    addedAt: Date.now(),
+  });
+
+  closeModal();
+});
+
+function escHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>

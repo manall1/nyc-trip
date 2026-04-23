@@ -9,6 +9,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
   <style>
     :root {
+      --nav-h: 46px;
       --bg:        #0f1117;
       --card:      #1a1f2e;
       --border:    #252d3d;
@@ -31,6 +32,48 @@
       font-family: 'DM Sans', sans-serif;
     }
 
+    /* ── TOP NAV ── */
+    .topnav {
+      height: var(--nav-h);
+      background: #0a0d14;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      gap: 6px;
+      position: sticky;
+      top: 0;
+      z-index: 200;
+    }
+    .topnav-brand {
+      font-family: 'Playfair Display', serif;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text);
+      text-decoration: none;
+      margin-right: 10px;
+      white-space: nowrap;
+    }
+    .topnav-brand em { font-style: italic; color: var(--accent); }
+    .topnav-sep { width: 1px; height: 18px; background: var(--border-lt); margin: 0 6px; flex-shrink: 0; }
+    .nav-link {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      text-decoration: none;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .nav-link:hover { color: var(--text); background: rgba(255,255,255,0.05); }
+    .nav-link.active { color: var(--accent); background: rgba(245,200,66,0.08); }
+    .nav-link .nav-icon { font-size: 0.95rem; }
+
     /* ── HEADER ── */
     header {
       background: var(--bg);
@@ -40,7 +83,7 @@
       align-items: center;
       gap: 20px;
       position: sticky;
-      top: 0;
+      top: var(--nav-h);
       z-index: 10;
     }
 
@@ -114,7 +157,7 @@
       padding: 16px 16px 12px;
       border-bottom: 1px solid var(--border);
       position: sticky;
-      top: 61px;
+      top: calc(var(--nav-h) + 61px);
       background: var(--bg);
       z-index: 5;
     }
@@ -239,6 +282,15 @@
   </style>
 </head>
 <body>
+
+<nav class="topnav">
+  <a class="topnav-brand" href="index.html">NYC <em>Trip</em></a>
+  <div class="topnav-sep"></div>
+  <a class="nav-link" href="index.html"><span class="nav-icon">🗺️</span> Map</a>
+  <a class="nav-link active" href="itinerary.html"><span class="nav-icon">📋</span> Itinerary</a>
+  <a class="nav-link" href="pinterest.html"><span class="nav-icon">📌</span> Pinterest</a>
+  <a class="nav-link" href="tiktok.html"><span class="nav-icon">🎵</span> TikTok</a>
+</nav>
 
 <header>
   <a class="back-btn" href="index.html">← Map</a>

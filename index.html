@@ -7,21 +7,24 @@
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
   <style>
     :root {
-      --bg:          #0f1117;
-      --sidebar-bg:  #13161f;
-      --card:        #1a1f2e;
-      --border:      #252d3d;
-      --border-lt:   #2d3a52;
-      --accent:      #f5c842;
-      --text:        #e8ecf3;
-      --muted:       #8b97b0;
-      --faint:       #3d4a62;
-      --food:        #e8715a;
-      --activity:    #6ec6b0;
-      --sightsee:    #f5c842;
-      --sidebar-w:   285px;
+      --bg:         #0f1117;
+      --sidebar-bg: #13161f;
+      --card:       #1a1f2e;
+      --border:     #252d3d;
+      --border-lt:  #2d3a52;
+      --accent:     #f5c842;
+      --text:       #e8ecf3;
+      --muted:      #8b97b0;
+      --faint:      #3d4a62;
+      --food:       #e8715a;
+      --activity:   #6ec6b0;
+      --sightsee:   #f5c842;
+      --sidebar-w:  275px;
+      --nav-h:      46px;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -36,11 +39,62 @@
 
     #app { display: flex; flex-direction: column; height: 100vh; }
 
+    /* ── TOP NAV ── */
+    .topnav {
+      height: var(--nav-h);
+      background: #0a0d14;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      gap: 6px;
+      flex-shrink: 0;
+      z-index: 200;
+    }
+
+    .topnav-brand {
+      font-family: 'Playfair Display', serif;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text);
+      text-decoration: none;
+      margin-right: 10px;
+      white-space: nowrap;
+    }
+
+    .topnav-brand em { font-style: italic; color: var(--accent); }
+
+    .topnav-sep {
+      width: 1px; height: 18px;
+      background: var(--border-lt);
+      margin: 0 6px;
+      flex-shrink: 0;
+    }
+
+    .nav-link {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      text-decoration: none;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+
+    .nav-link:hover { color: var(--text); background: rgba(255,255,255,0.05); }
+    .nav-link.active { color: var(--accent); background: rgba(245,200,66,0.08); }
+    .nav-link .nav-icon { font-size: 0.95rem; }
+
     /* ── HEADER ── */
     header {
       background: var(--bg);
       border-bottom: 1px solid var(--border);
-      padding: 13px 24px;
+      padding: 12px 22px;
       flex-shrink: 0;
       z-index: 100;
     }
@@ -55,7 +109,7 @@
 
     .title-block h1 {
       font-family: 'Playfair Display', serif;
-      font-size: clamp(1.3rem, 2.2vw, 1.85rem);
+      font-size: clamp(1.2rem, 2vw, 1.7rem);
       font-weight: 700;
       letter-spacing: -0.02em;
       line-height: 1.1;
@@ -66,7 +120,7 @@
     .title-block p {
       margin-top: 2px;
       color: var(--muted);
-      font-size: 0.74rem;
+      font-size: 0.72rem;
       letter-spacing: 0.08em;
       text-transform: uppercase;
     }
@@ -83,7 +137,7 @@
       display: flex;
       align-items: center;
       gap: 6px;
-      padding: 6px 13px;
+      padding: 5px 12px;
       border: 1px solid var(--border-lt);
       border-radius: 100px;
       background: transparent;
@@ -110,7 +164,6 @@
     }
 
     .filter-btn:hover { border-color: var(--muted); color: var(--text); }
-
     .filter-btn.active[data-filter="all"]      { border-color: var(--text);     color: var(--text);     background: rgba(232,236,243,.07); }
     .filter-btn.active[data-filter="food"]     { border-color: var(--food);     color: var(--food);     background: rgba(232,113,90,.09); }
     .filter-btn.active[data-filter="activity"] { border-color: var(--activity); color: var(--activity); background: rgba(110,198,176,.09); }
@@ -119,8 +172,8 @@
     /* ── MAIN ── */
     #main { display: flex; flex: 1; overflow: hidden; }
 
-    /* ── SIDEBAR ── */
-    #sidebar {
+    /* ── LEFT SIDEBAR ── */
+    #sidebar-left {
       width: var(--sidebar-w);
       flex-shrink: 0;
       background: var(--sidebar-bg);
@@ -131,7 +184,7 @@
     }
 
     .sidebar-title {
-      padding: 13px 16px 11px;
+      padding: 12px 16px 10px;
       font-size: 0.67rem;
       font-weight: 600;
       letter-spacing: 0.14em;
@@ -151,7 +204,6 @@
     }
 
     .sidebar-scroll::-webkit-scrollbar { width: 3px; }
-    .sidebar-scroll::-webkit-scrollbar-track { background: transparent; }
     .sidebar-scroll::-webkit-scrollbar-thumb { background: var(--border-lt); border-radius: 3px; }
 
     /* ── DAY CARD ── */
@@ -160,7 +212,11 @@
       border: 1px solid var(--border);
       border-radius: 12px;
       overflow: hidden;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
     }
+
+    .day-card:hover { border-color: var(--border-lt); background: rgba(255,255,255,0.02); }
 
     .day-header {
       display: flex;
@@ -171,7 +227,7 @@
     }
 
     .day-label-sm {
-      font-size: 0.66rem;
+      font-size: 0.64rem;
       font-weight: 600;
       letter-spacing: 0.1em;
       text-transform: uppercase;
@@ -181,24 +237,18 @@
 
     .day-label-lg {
       font-family: 'Playfair Display', serif;
-      font-size: 0.98rem;
+      font-size: 0.96rem;
       font-weight: 700;
       color: var(--text);
       margin-top: 1px;
       display: block;
     }
 
-    .day-wx {
-      display: flex;
-      align-items: center;
-      gap: 7px;
-    }
-
-    .wx-icon { font-size: 1.55rem; line-height: 1; }
-
+    .day-wx { display: flex; align-items: center; gap: 7px; }
+    .wx-icon { font-size: 1.5rem; line-height: 1; }
     .wx-temps { text-align: right; }
-    .wx-hi { font-size: 0.9rem; font-weight: 600; color: var(--text); display: block; }
-    .wx-lo { font-size: 0.73rem; color: var(--muted); display: block; }
+    .wx-hi { font-size: 0.88rem; font-weight: 600; color: var(--text); display: block; }
+    .wx-lo { font-size: 0.72rem; color: var(--muted); display: block; }
 
     .day-wx-bar {
       display: flex;
@@ -209,8 +259,8 @@
       background: rgba(0,0,0,0.18);
     }
 
-    .wx-desc { font-size: 0.73rem; color: var(--muted); flex: 1; }
-    .wx-rain { font-size: 0.71rem; color: #6b9fd4; font-weight: 600; }
+    .wx-desc { font-size: 0.72rem; color: var(--muted); flex: 1; }
+    .wx-rain { font-size: 0.7rem; color: #6b9fd4; font-weight: 600; }
 
     .wx-loading {
       font-size: 0.72rem;
@@ -218,20 +268,40 @@
       padding: 7px 14px;
       border-top: 1px solid var(--border);
       text-align: center;
-      letter-spacing: 0.03em;
       animation: pulse 1.5s ease-in-out infinite;
     }
 
     @keyframes pulse { 0%,100% { opacity: 0.5; } 50% { opacity: 1; } }
 
+    .sidebar-footer {
+      padding: 11px;
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .itinerary-btn {
+      display: block;
+      text-align: center;
+      padding: 9px 14px;
+      border: 1px solid var(--border-lt);
+      border-radius: 10px;
+      color: var(--muted);
+      font-size: 0.75rem;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      text-decoration: none;
+      transition: all 0.15s;
+    }
+
+    .itinerary-btn:hover { border-color: var(--accent); color: var(--accent); background: rgba(245,200,66,0.06); }
+
     /* ── MAP ── */
     #map { flex: 1; z-index: 1; }
     .leaflet-container { background: #0f1117; }
 
-    /* Borough labels */
     .borough-label {
       font-family: 'DM Sans', sans-serif;
-      font-size: 10.5px;
+      font-size: 10px;
       font-weight: 700;
       letter-spacing: 0.13em;
       text-transform: uppercase;
@@ -239,17 +309,16 @@
       border: none !important;
       box-shadow: none !important;
       padding: 0 !important;
-      color: rgba(255,255,255,0.3);
+      color: rgba(255,255,255,0.25);
       pointer-events: none;
     }
 
-    /* Pins */
     .pin-wrap { display: flex; flex-direction: column; align-items: center; cursor: pointer; }
 
     .pin-circle {
       width: 28px; height: 28px;
       border-radius: 50%;
-      border: 2px solid rgba(255,255,255,0.22);
+      border: 2px solid rgba(255,255,255,0.2);
       box-shadow: 0 2px 10px rgba(0,0,0,0.55), 0 0 0 3px rgba(255,255,255,0.04);
       display: flex; align-items: center; justify-content: center;
       font-size: 13px;
@@ -262,6 +331,115 @@
     }
 
     .pin-tail { width: 2px; height: 7px; margin-top: -1px; opacity: 0.45; }
+
+    /* ── RIGHT SIDEBAR ── */
+    #sidebar-right {
+      width: var(--sidebar-w);
+      flex-shrink: 0;
+      background: var(--sidebar-bg);
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .sr-header {
+      padding: 12px 16px 10px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    .sr-title {
+      font-size: 0.67rem;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .add-place-btn {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 11px;
+      background: rgba(245,200,66,0.1);
+      border: 1px solid rgba(245,200,66,0.25);
+      border-radius: 20px;
+      color: var(--accent);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.7rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .add-place-btn:hover { background: rgba(245,200,66,0.18); border-color: var(--accent); }
+
+    .places-scroll {
+      overflow-y: auto;
+      flex: 1;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .places-scroll::-webkit-scrollbar { width: 3px; }
+    .places-scroll::-webkit-scrollbar-thumb { background: var(--border-lt); border-radius: 3px; }
+
+    .place-row {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 8px 10px;
+      border-radius: 9px;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: background 0.12s, border-color 0.12s;
+    }
+
+    .place-row:hover { background: rgba(255,255,255,0.04); border-color: var(--border); }
+
+    .place-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .place-row-emoji { font-size: 1rem; flex-shrink: 0; }
+
+    .place-row-info { flex: 1; min-width: 0; }
+
+    .place-row-name {
+      font-size: 0.78rem;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: var(--text);
+    }
+
+    .place-row-meta {
+      font-size: 0.63rem;
+      color: var(--faint);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-top: 1px;
+    }
+
+    .place-row-custom { font-size: 0.6rem; color: var(--accent); opacity: 0.7; }
+
+    .sr-section-label {
+      padding: 6px 10px 3px;
+      font-size: 0.59rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--faint);
+    }
 
     /* ── POPUP OVERLAY ── */
     #popup-overlay {
@@ -289,10 +467,11 @@
 
     .popup-card::-webkit-scrollbar { width: 4px; }
     .popup-card::-webkit-scrollbar-thumb { background: var(--border-lt); border-radius: 4px; }
-
     .popup-card.food     { border-top: 3px solid var(--food); }
     .popup-card.activity { border-top: 3px solid var(--activity); }
     .popup-card.sightsee { border-top: 3px solid var(--sightsee); }
+    .popup-card.hotel    { border-top: 3px solid #a78bfa; }
+    .popup-card.custom   { border-top: 3px solid var(--muted); }
 
     @keyframes popIn {
       from { opacity: 0; transform: scale(0.93) translateY(14px); }
@@ -346,6 +525,8 @@
     .tag.food     { background: rgba(232,113,90,0.15); color: var(--food); }
     .tag.activity { background: rgba(110,198,176,0.15); color: var(--activity); }
     .tag.sightsee { background: rgba(245,200,66,0.15);  color: var(--sightsee); }
+    .tag.hotel    { background: rgba(167,139,250,0.15); color: #a78bfa; }
+    .tag.custom   { background: rgba(139,151,176,0.15); color: var(--muted); }
 
     .popup-address { font-size: 0.78rem; color: var(--muted); margin-bottom: 10px; }
 
@@ -382,45 +563,122 @@
 
     .map-btn:hover { border-color: var(--muted); color: var(--text); }
 
-    .sidebar-footer {
-      padding: 12px;
-      border-top: 1px solid var(--border);
-      flex-shrink: 0;
+    /* ── ADD PLACE MODAL ── */
+    #add-place-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      z-index: 3000;
+      align-items: center; justify-content: center;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(8px);
+      padding: 20px;
     }
 
-    .itinerary-btn {
-      display: block;
-      text-align: center;
-      padding: 9px 14px;
+    #add-place-overlay.visible { display: flex; }
+
+    .modal-card {
+      background: var(--card);
       border: 1px solid var(--border-lt);
-      border-radius: 10px;
-      color: var(--muted);
+      border-radius: 18px;
+      width: 100%;
+      max-width: 420px;
+      padding: 28px;
+      position: relative;
+      animation: popIn 0.2s ease;
+    }
+
+    .modal-card h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .modal-card h2 em { font-style: italic; color: var(--accent); }
+
+    .modal-sub {
       font-size: 0.75rem;
-      font-weight: 500;
-      letter-spacing: 0.06em;
-      text-decoration: none;
-      transition: all 0.15s;
+      color: var(--muted);
+      margin-bottom: 22px;
+      line-height: 1.5;
     }
 
-    .itinerary-btn:hover {
-      border-color: var(--accent);
-      color: var(--accent);
-      background: rgba(245,200,66,0.06);
+    .modal-close {
+      position: absolute; top: 16px; right: 16px;
+      width: 28px; height: 28px; border-radius: 50%;
+      background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1);
+      color: var(--text); font-size: 0.8rem; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
     }
 
-    .day-card {
+    .modal-close:hover { background: rgba(0,0,0,0.8); }
+
+    .form-group { margin-bottom: 14px; }
+
+    .form-label {
+      display: block;
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .form-input, .form-select {
+      width: 100%;
+      background: #0f1117;
+      border: 1px solid var(--border-lt);
+      border-radius: 9px;
+      padding: 9px 13px;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.83rem;
+      transition: border-color 0.15s;
+      outline: none;
+    }
+
+    .form-input:focus, .form-select:focus { border-color: var(--accent); }
+
+    .form-select { appearance: none; cursor: pointer; }
+
+    .form-row { display: flex; gap: 10px; }
+    .form-row .form-group { flex: 1; }
+
+    .modal-error {
+      font-size: 0.73rem;
+      color: var(--food);
+      margin-bottom: 12px;
+      display: none;
+    }
+
+    .modal-error.visible { display: block; }
+
+    .modal-submit {
+      width: 100%;
+      padding: 11px;
+      background: var(--accent);
+      border: none;
+      border-radius: 10px;
+      color: #0a0d14;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 700;
       cursor: pointer;
+      transition: opacity 0.15s;
+      letter-spacing: 0.03em;
     }
 
-    .day-card:hover {
-      border-color: var(--border-lt);
-      background: rgba(255,255,255,0.02);
+    .modal-submit:hover { opacity: 0.88; }
+    .modal-submit:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    @media (max-width: 900px) {
+      #sidebar-right { display: none; }
     }
 
     @media (max-width: 680px) {
-      #sidebar { display: none; }
+      #sidebar-left { display: none; }
       header { padding: 10px 14px; }
-      .filter-bar { gap: 5px; }
     }
   </style>
 </head>
@@ -428,27 +686,35 @@
 
 <div id="app">
 
+  <!-- TOP NAV -->
+  <nav class="topnav">
+    <a class="topnav-brand" href="index.html">NYC <em>Trip</em></a>
+    <div class="topnav-sep"></div>
+    <a class="nav-link active" href="index.html"><span class="nav-icon">🗺️</span> Map</a>
+    <a class="nav-link" href="itinerary.html"><span class="nav-icon">📋</span> Itinerary</a>
+    <a class="nav-link" href="pinterest.html"><span class="nav-icon">📌</span> Pinterest</a>
+    <a class="nav-link" href="tiktok.html"><span class="nav-icon">🎵</span> TikTok</a>
+  </nav>
+
   <header>
     <div class="header-inner">
       <div class="title-block">
         <h1>New York <em>City</em></h1>
-        <p>Spring 2026 🗽</p>
+        <p>Spring 2026 🗽 · Apr 26 – 30</p>
       </div>
       <div class="filter-bar">
-        <button class="filter-btn active" data-filter="all">
-          All <span class="cnt">11</span>
-        </button>
+        <button class="filter-btn active" data-filter="all">All <span class="cnt" id="cnt-all">12</span></button>
         <button class="filter-btn" data-filter="food">
-          <span class="dot" style="background:var(--food)"></span>
-          Food <span class="cnt">2</span>
+          <span class="dot" style="background:var(--food)"></span>Food <span class="cnt">2</span>
         </button>
         <button class="filter-btn" data-filter="activity">
-          <span class="dot" style="background:var(--activity)"></span>
-          Activity <span class="cnt">6</span>
+          <span class="dot" style="background:var(--activity)"></span>Activity <span class="cnt">6</span>
         </button>
         <button class="filter-btn" data-filter="sightsee">
-          <span class="dot" style="background:var(--sightsee)"></span>
-          Sightsee <span class="cnt">3</span>
+          <span class="dot" style="background:var(--sightsee)"></span>Sightsee <span class="cnt">3</span>
+        </button>
+        <button class="filter-btn" data-filter="hotel">
+          <span class="dot" style="background:#a78bfa"></span>Hotel
         </button>
       </div>
     </div>
@@ -456,7 +722,8 @@
 
   <div id="main">
 
-    <aside id="sidebar">
+    <!-- LEFT SIDEBAR: days + weather -->
+    <aside id="sidebar-left">
       <div class="sidebar-title">Trip Days · Apr 26 – 30</div>
       <div class="sidebar-scroll" id="sidebar-days"></div>
       <div class="sidebar-footer">
@@ -466,10 +733,19 @@
 
     <div id="map"></div>
 
+    <!-- RIGHT SIDEBAR: places list -->
+    <aside id="sidebar-right">
+      <div class="sr-header">
+        <div class="sr-title">Places</div>
+        <button class="add-place-btn" id="open-add-place">+ Add Place</button>
+      </div>
+      <div class="places-scroll" id="places-scroll"></div>
+    </aside>
+
   </div>
 </div>
 
-<!-- POPUP -->
+<!-- PLACE POPUP -->
 <div id="popup-overlay">
   <div class="popup-card" id="popup-card">
     <button class="popup-close" id="popup-close">✕</button>
@@ -490,153 +766,200 @@
   </div>
 </div>
 
+<!-- ADD PLACE MODAL -->
+<div id="add-place-overlay">
+  <div class="modal-card">
+    <button class="modal-close" id="close-add-place">✕</button>
+    <h2>Add a <em>Place</em></h2>
+    <p class="modal-sub">It'll appear on the map and in everyone's sidebar in real time.</p>
+
+    <div class="form-group">
+      <label class="form-label" for="ap-name">Place name</label>
+      <input class="form-input" id="ap-name" type="text" placeholder="e.g. Joe's Pizza" autocomplete="off">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="ap-address">Address</label>
+      <input class="form-input" id="ap-address" type="text" placeholder="e.g. 7 Carmine St, New York, NY" autocomplete="off">
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label" for="ap-category">Category</label>
+        <select class="form-select" id="ap-category">
+          <option value="food">🍽️ Food</option>
+          <option value="activity">🎯 Activity</option>
+          <option value="sightsee">📍 Sightsee</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="ap-person">Added by</label>
+        <input class="form-input" id="ap-person" type="text" placeholder="Your name" autocomplete="off">
+      </div>
+    </div>
+
+    <div class="modal-error" id="ap-error"></div>
+    <button class="modal-submit" id="ap-submit">Add to Map →</button>
+  </div>
+</div>
+
 <script>
-// ── DATA ──────────────────────────────────────────────────────────────────
+// ── FIREBASE ──────────────────────────────────────────────────────────────
+firebase.initializeApp({
+  apiKey: "AIzaSyCe4jMzTvSSmOnvNJwMR3ku7oP89TouXsY",
+  authDomain: "nyc-trip-71a08.firebaseapp.com",
+  databaseURL: "https://nyc-trip-71a08-default-rtdb.firebaseio.com",
+  projectId: "nyc-trip-71a08",
+  storageBucket: "nyc-trip-71a08.firebasestorage.app",
+  messagingSenderId: "770213467859",
+  appId: "1:770213467859:web:f005acc598769aebb5a626"
+});
+const db = firebase.database();
+
+// ── HARDCODED PLACES ──────────────────────────────────────────────────────
+const COLORS = { food:'#e8715a', activity:'#6ec6b0', sightsee:'#f5c842', hotel:'#a78bfa', custom:'#8b97b0' };
+
 const places = [
   {
     id:1, category:'food',
-    name:'Din Tai Fung',
+    name:'Din Tai Fung', emoji:'🥟',
     address:'1633 Broadway, Midtown Manhattan',
     note:'World-famous Taiwanese soup dumplings (XLB). Try the chicken dumplings & chocolate XLB for dessert. <span class="highlight">Get on the waitlist early — gets very packed.</span>',
     rating:'4.3 · Taiwanese',
     mapsUrl:'https://maps.google.com/?cid=9042869628820017021',
     img:'https://lh3.googleusercontent.com/place-photos/AJRVUZMCNsEqmKqzXN9ZdcHNkCP5ArgNCk9gpW38GSsHZEbum-Rp72ROLifqo8tcCLobIi2fovLRm7GD7Xpdy0DX7W9Qps_SdCreCsLncI73Cy2Rqyq3k_T0fgx__iFskhhuXe7ETZs1_Ykcv5mCrA=s800-w800-h600',
-    emoji:'🥟', lat:40.7615, lng:-73.9824,
+    lat:40.7615, lng:-73.9824,
   },
   {
     id:2, category:'food',
-    name:'Chinatown Eats',
+    name:'Chinatown Eats', emoji:'🍜',
     address:'Canal St area, Manhattan Chinatown',
-    note:'Wander for bubble tea, egg tarts, and bao. <span class="highlight">Most spots are not halal</span> — stick to vegetarian options or pre-check. Good picks: egg custard tarts, scallion pancakes, mango drinks.',
+    note:'Wander for bubble tea, egg tarts, and bao. <span class="highlight">Most spots are not halal</span> — stick to vegetarian options or pre-check.',
     rating:'Explore & graze',
     mapsUrl:'https://maps.google.com/?q=Chinatown+NYC',
     img:'https://upload.wikimedia.org/wikipedia/commons/thumb/3/38/Chinatown%2C_Manhattan%2C_New_York_City.jpg/960px-Chinatown%2C_Manhattan%2C_New_York_City.jpg',
-    emoji:'🍜', lat:40.7158, lng:-73.9972,
     banner:'<strong>Halal heads-up:</strong> Most of Chinatown is not halal-certified. Check menus carefully or stick to vegetarian picks.',
+    lat:40.7158, lng:-73.9972,
   },
   {
     id:3, category:'activity',
-    name:'Roosevelt Island Tramway',
+    name:'Roosevelt Island Tramway', emoji:'🚡',
     address:'254 E 60th St, Upper East Side',
-    note:'An aerial cable car right over the East River. <span class="highlight">Do this at night</span> — the city lights are magical. Same price as the subway (~$2.90) with your MetroCard.',
+    note:'An aerial cable car right over the East River. <span class="highlight">Do this at night</span> — the city lights are magical. Same price as the subway with your MetroCard.',
     rating:'4.7 · 🌙 Night recommended',
     mapsUrl:'https://maps.google.com/?cid=17296483083023729155',
     img:'https://upload.wikimedia.org/wikipedia/commons/thumb/6/66/Roosevelt_Island_Tram_by_David_Shankbone.jpg/960px-Roosevelt_Island_Tram_by_David_Shankbone.jpg',
-    emoji:'🚡', lat:40.7606, lng:-73.9566,
+    lat:40.7606, lng:-73.9566,
   },
   {
     id:4, category:'activity',
-    name:'Pikchi Photobooth',
+    name:'Pikchi Photobooth', emoji:'📸',
     address:'102 Eldridge St, Chinatown / LES',
-    note:'3 themed booths: grocery store, elevator, telephone. Walk-in, no reservation needed. <span class="highlight">$12–15 for 2 strips + keychain option.</span> Open until 10pm Fri–Sat.',
+    note:'3 themed booths: grocery store, elevator, telephone. Walk-in, no reservation needed. <span class="highlight">$12–15 for 2 strips + keychain option.</span>',
     rating:'4.8 · 📍 Chinatown',
     mapsUrl:'https://maps.google.com/?cid=10060015174988668270',
     img:'https://lh3.googleusercontent.com/place-photos/AJRVUZM7ApeCi__vum-tdOt8P_eKdMBS2d8HifuLrKw8p2JVWSf7b4jRytZAg61gTjFbd3XhUxPkUMOxSVLvMGwqSwU4C_EC1aYSpO53uDWF_yy0XYa_siz8795US2z3JmeWk-lWLBesCNdBJyHzdyQ=s800-w800-h600',
-    emoji:'📸', lat:40.7164, lng:-73.9919,
+    lat:40.7164, lng:-73.9919,
   },
   {
     id:5, category:'activity',
-    name:'AUTOPHOTO Gallery',
+    name:'AUTOPHOTO Gallery', emoji:'🎞️',
     address:'121 Orchard St, Lower East Side',
-    note:'Vintage photobooth museum with 8+ working booths. <span class="highlight">Free entry</span>, $8–12 per booth. 5-star rated — the staff narrate the history of each booth. A must if you love photobooths. Closed Mondays.',
+    note:'Vintage photobooth museum with 8+ working booths. <span class="highlight">Free entry</span>, $8–12 per booth. Closed Mondays.',
     rating:'5.0 · 🎞️ LES',
     mapsUrl:'https://maps.google.com/?cid=7714283813248372139',
     img:'https://lh3.googleusercontent.com/place-photos/AJRVUZMhOJCx260ESGEYwS7dcMmyb7uA4Em9tQ5vNsoYOKDpdQh84uaUQaRMbn29Yk2xw3uHOpWPOx-Rxr9kOUrk395H6Q2zxLfEfiVVFypDVAK8_-x7_8Kzm0M-z60diam_rksmNjNFWPC94bMQsBY=s800-w800-h600',
-    emoji:'🎞️', lat:40.7207, lng:-73.9895,
+    lat:40.7207, lng:-73.9895,
   },
   {
     id:6, category:'activity',
-    name:'NYC Ferry Ride',
+    name:'NYC Ferry Ride', emoji:'⛴️',
     address:'Multiple piers, East River & Hudson',
-    note:'Only $4.50 — best value view in the city. <span class="highlight">Take it at dusk</span> to see One World Trade lit up across the water. East River route is the most scenic. Book nothing, just show up.',
+    note:'Only $4.50 — best value view in the city. <span class="highlight">Take it at dusk</span> to see One World Trade lit up across the water.',
     rating:'4.6 · $4.50 flat',
     mapsUrl:'https://maps.google.com/?cid=18459568455898400516',
     img:'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/NYC_Ferry_-_East_River_Route.jpg/960px-NYC_Ferry_-_East_River_Route.jpg',
-    emoji:'⛴️', lat:40.7030, lng:-74.0116,
+    lat:40.7030, lng:-74.0116,
   },
   {
     id:7, category:'activity',
-    name:'SUMMIT One Vanderbilt',
+    name:'SUMMIT One Vanderbilt', emoji:'🏙️',
     address:'45 E 42nd St, Midtown',
-    note:'Immersive observation experience: glass floors, balloon room, mirror infinity rooms. <span class="highlight">Book early AM for empty photo ops</span> (8–9am slot). Open until midnight most nights. Requires tickets.',
+    note:'Immersive observation: glass floors, balloon room, mirror infinity rooms. <span class="highlight">Book early AM for empty photo ops.</span>',
     rating:'4.7 · Book in advance',
     mapsUrl:'https://maps.google.com/?cid=13577862127041110382',
     img:'https://lh3.googleusercontent.com/place-photos/AJRVUZNAgekSLxDI2vVyizZiwt_xvhg7Z09slRZOjVLmJp3Xi5afo-iVQE4udvzCOcV_ppN71nRwSzmqntkgwSf96EUK1zSrT3kx9AyzcHNEJ3AvB_4XirrMwkG_pw5BHOG3YnOIZF8lSYeVqhUSvg=s800-w800-h600',
-    emoji:'🏙️', lat:40.7527, lng:-73.9772,
+    lat:40.7527, lng:-73.9772,
   },
   {
     id:8, category:'activity',
-    name:'The Edge — Hudson Yards',
+    name:'The Edge — Hudson Yards', emoji:'🌆',
     address:'30 Hudson Yards, West Side',
-    note:'Highest outdoor sky deck in NYC — glass floor, 360° views, Hudson River on one side & the whole skyline on the other. <span class="highlight">Sunset slot is the move.</span> Buy tickets online to skip the line.',
+    note:'Highest outdoor sky deck in NYC — glass floor, 360° views. <span class="highlight">Sunset slot is the move.</span> Buy tickets online.',
     rating:'4.6 · Outdoor deck',
     mapsUrl:'https://maps.google.com/?cid=14024044649099225455',
     img:'https://lh3.googleusercontent.com/place-photos/AJRVUZOXy_YLZZLcgbAjsT3ypRVQ5iZd_bUkRT0RbWZ2hzaB9To-FHHyMqSOt7JFyog-PQX47XauR6BIu1B1zunNYOvC53A01STUnaC4SVwo1k1GlSxgXQ81gubRPVY0otLCVfQicqvn42FMZIjAves=s800-w750-h500',
-    emoji:'🌆', lat:40.7535, lng:-74.0019,
+    lat:40.7535, lng:-74.0019,
   },
   {
     id:9, category:'sightsee',
-    name:'Brooklyn Bridge',
+    name:'Brooklyn Bridge', emoji:'🌉',
     address:'Connecting Manhattan & Brooklyn',
-    note:'Walk the 1.3-mile pedestrian path for iconic skyline views. <span class="highlight">Go early morning for fewer crowds.</span> Pair with a DUMBO walk right after — Washington St. gives the best framed shot of the bridge.',
+    note:'Walk the 1.3-mile pedestrian path for iconic skyline views. <span class="highlight">Go early morning for fewer crowds.</span>',
     rating:'4.8 · Free · 30–45 min walk',
     mapsUrl:'https://maps.google.com/?cid=14347003905124695845',
     img:'https://lh3.googleusercontent.com/place-photos/AJRVUZMsHUdgMLRzIJbQiJ-ltmyAvUSIj2rcBY2dBitQEi_y5OXaxBh_P-NSBrQhMrjihBfMPqf5idlx_Ut4tVVCAcfFVeWW7Xw0JG8ecjmHmI84tuSTnfrmamGc0wcJw7Jo63dBk2VQskOCsp9xSg=s800-w800-h600',
-    emoji:'🌉', lat:40.7061, lng:-73.9969,
+    lat:40.7061, lng:-73.9969,
   },
   {
     id:10, category:'sightsee',
-    name:'DUMBO, Brooklyn',
+    name:'DUMBO, Brooklyn', emoji:'🏛️',
     address:'Washington St & Water St, Brooklyn',
-    note:"One of NYC's most photogenic neighbourhoods. The cobblestone streets frame the bridge perfectly. <span class=\"highlight\">Washington St is the shot everyone comes for.</span> Great cafés and waterfront views nearby.",
+    note:"One of NYC's most photogenic neighbourhoods. <span class=\"highlight\">Washington St is the shot everyone comes for.</span>",
     rating:'4.8 · Free · Pair with Bridge walk',
     mapsUrl:'https://maps.google.com/?q=DUMBO+Brooklyn+NYC',
     img:'https://lh3.googleusercontent.com/place-photos/AJRVUZMtEPjlRseze7-zp4tHtxuJiPAAq0rfKKeW3Ycu2PeM2eDfqy44W9E9oHKvIiCer2y1TEkUWJcKZSq4Ziqig9BDTe7pdByB70tHRN8rJ26G1R1psHLQCzW4iC9h1C1gJafperD0qUE2f5jLO2I=s800-w800-h600',
-    emoji:'🏛️', lat:40.7033, lng:-73.9881,
+    lat:40.7033, lng:-73.9881,
   },
   {
     id:11, category:'sightsee',
-    name:'Canal Street',
+    name:'Canal Street', emoji:'🛍️',
     address:'Canal St, Chinatown / SoHo border',
-    note:'The chaotic, sensory-overload heart of Chinatown. Knock-off bags, cheap phone cases, bubble tea, and street food vendors. <span class="highlight">Bring cash</span> — many vendors are cash only. Fun to wander, not really a destination.',
+    note:'Chaotic, sensory-overload heart of Chinatown. Knock-off bags, street food vendors. <span class="highlight">Bring cash</span> — many vendors are cash only.',
     rating:'4.5 · Free · Bring cash',
     mapsUrl:'https://maps.google.com/?cid=5113620975249408713',
     img:'https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/Canal_Street_Chinatown_3.jpg/960px-Canal_Street_Chinatown_3.jpg',
-    emoji:'🛍️', lat:40.7180, lng:-73.9996,
+    lat:40.7180, lng:-73.9996,
   },
 ];
 
-const COLORS = { food:'#e8715a', activity:'#6ec6b0', sightsee:'#f5c842' };
+// Hotel (hardcoded, not in the draggable list)
+const HOTEL = {
+  id:'hotel', category:'hotel', name:'Our Hotel', emoji:'🏨',
+  address:'1335 6th Ave, New York, NY 10019',
+  note:'Base camp for the trip. Located in Midtown Manhattan near Central Park. <span class="highlight">Steps from the F/M subway lines.</span>',
+  rating:'Midtown Manhattan',
+  mapsUrl:'https://maps.google.com/?q=1335+6th+Ave+New+York+NY+10019',
+  lat:40.7617, lng:-73.9796,
+};
 
 // ── WEATHER CODES ──────────────────────────────────────────────────────────
 const WX = {
-  0:  { icon:'☀️',  desc:'Clear sky' },
-  1:  { icon:'🌤️', desc:'Mainly clear' },
-  2:  { icon:'⛅',  desc:'Partly cloudy' },
-  3:  { icon:'☁️',  desc:'Overcast' },
-  45: { icon:'🌫️', desc:'Foggy' },
-  48: { icon:'🌫️', desc:'Icy fog' },
-  51: { icon:'🌦️', desc:'Light drizzle' },
-  53: { icon:'🌦️', desc:'Drizzle' },
-  55: { icon:'🌧️', desc:'Heavy drizzle' },
-  61: { icon:'🌧️', desc:'Light rain' },
-  63: { icon:'🌧️', desc:'Rain' },
-  65: { icon:'🌧️', desc:'Heavy rain' },
-  71: { icon:'🌨️', desc:'Light snow' },
-  80: { icon:'🌦️', desc:'Rain showers' },
-  81: { icon:'🌦️', desc:'Showers' },
-  82: { icon:'🌧️', desc:'Heavy showers' },
-  95: { icon:'⛈️',  desc:'Thunderstorm' },
+  0:{icon:'☀️',desc:'Clear sky'},1:{icon:'🌤️',desc:'Mainly clear'},
+  2:{icon:'⛅',desc:'Partly cloudy'},3:{icon:'☁️',desc:'Overcast'},
+  45:{icon:'🌫️',desc:'Foggy'},51:{icon:'🌦️',desc:'Light drizzle'},
+  53:{icon:'🌦️',desc:'Drizzle'},61:{icon:'🌧️',desc:'Light rain'},
+  63:{icon:'🌧️',desc:'Rain'},80:{icon:'🌦️',desc:'Showers'},
+  95:{icon:'⛈️',desc:'Thunderstorm'},
 };
 
 function wxInfo(code) {
   if (WX[code]) return WX[code];
-  if (code <= 3)  return { icon:'⛅',  desc:'Partly cloudy' };
-  if (code <= 48) return { icon:'🌫️', desc:'Foggy' };
-  if (code <= 67) return { icon:'🌧️', desc:'Rainy' };
-  if (code <= 77) return { icon:'🌨️', desc:'Snowy' };
-  if (code <= 82) return { icon:'🌦️', desc:'Showers' };
-  return { icon:'⛈️', desc:'Stormy' };
+  if (code <= 3)  return {icon:'⛅',desc:'Partly cloudy'};
+  if (code <= 48) return {icon:'🌫️',desc:'Foggy'};
+  if (code <= 67) return {icon:'🌧️',desc:'Rainy'};
+  if (code <= 82) return {icon:'🌦️',desc:'Showers'};
+  return {icon:'⛈️',desc:'Stormy'};
 }
 
 // ── SIDEBAR DAYS ──────────────────────────────────────────────────────────
@@ -649,7 +972,6 @@ const DAYS = [
 ];
 
 const sidebarEl = document.getElementById('sidebar-days');
-
 DAYS.forEach(d => {
   const card = document.createElement('div');
   card.className = 'day-card';
@@ -665,48 +987,35 @@ DAYS.forEach(d => {
     </div>
     <div class="wx-loading" id="wx-bar-${d.date}">Loading forecast…</div>
   `;
-  card.addEventListener('click', () => {
-    window.location.href = `day.html?date=${d.date}`;
-  });
+  card.addEventListener('click', () => { window.location.href = `day.html?date=${d.date}`; });
   sidebarEl.appendChild(card);
 });
 
-// ── FETCH WEATHER (Open-Meteo, free, no API key) ──────────────────────────
+// ── WEATHER ───────────────────────────────────────────────────────────────
 (async () => {
   try {
     const url =
       'https://api.open-meteo.com/v1/forecast' +
       '?latitude=40.7128&longitude=-74.0060' +
       '&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,weathercode' +
-      '&timezone=America%2FNew_York' +
-      '&start_date=2026-04-26&end_date=2026-04-30' +
+      '&timezone=America%2FNew_York&start_date=2026-04-26&end_date=2026-04-30' +
       '&temperature_unit=celsius';
-
     const data = await (await fetch(url)).json();
-    const { time, temperature_2m_max: hiArr, temperature_2m_min: loArr,
-            precipitation_probability_max: rainArr, weathercode: codeArr } = data.daily;
-
+    const { time, temperature_2m_max:hi, temperature_2m_min:lo,
+            precipitation_probability_max:rain, weathercode:code } = data.daily;
     time.forEach((date, i) => {
-      const info = wxInfo(codeArr[i]);
-      const hi   = Math.round(hiArr[i]);
-      const lo   = Math.round(loArr[i]);
-      const rain = rainArr[i] ?? 0;
-
+      const info = wxInfo(code[i]);
       const mainEl = document.getElementById(`wx-main-${date}`);
       const barEl  = document.getElementById(`wx-bar-${date}`);
       if (!mainEl) return;
-
       mainEl.innerHTML = `
         <div class="wx-icon">${info.icon}</div>
         <div class="wx-temps">
-          <span class="wx-hi">${hi}°C</span>
-          <span class="wx-lo">${lo}°C</span>
+          <span class="wx-hi">${Math.round(hi[i])}°C</span>
+          <span class="wx-lo">${Math.round(lo[i])}°C</span>
         </div>`;
-
       barEl.className = 'day-wx-bar';
-      barEl.innerHTML = `
-        <span class="wx-desc">${info.desc}</span>
-        <span class="wx-rain">💧 ${rain}%</span>`;
+      barEl.innerHTML = `<span class="wx-desc">${info.desc}</span><span class="wx-rain">💧 ${rain[i] ?? 0}%</span>`;
     });
   } catch {
     DAYS.forEach(d => {
@@ -717,27 +1026,20 @@ DAYS.forEach(d => {
 })();
 
 // ── MAP ───────────────────────────────────────────────────────────────────
-const map = L.map('map', {
-  center: [40.722, -73.984],
-  zoom: 12,
-  zoomControl: false,
-});
+const map = L.map('map', { center:[40.722,-73.984], zoom:12, zoomControl:false });
 
-L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
-  attribution:'Tiles © <a href="https://www.esri.com/">Esri</a>',
-  maxZoom: 16,
+L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+  attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>',
+  subdomains:'abcd',
+  maxZoom:19,
 }).addTo(map);
 
 L.control.zoom({ position:'bottomright' }).addTo(map);
 
 // ── BOROUGH BOUNDARIES ────────────────────────────────────────────────────
 const BOROUGH_PALETTE = {
-  'Manhattan':    '#a78bfa',
-  'Brooklyn':     '#60a5fa',
-  'Queens':       '#34d399',
-  'The Bronx':    '#f87171',
-  'Bronx':        '#f87171',
-  'Staten Island':'#fbbf24',
+  'Manhattan':'#a78bfa','Brooklyn':'#60a5fa','Queens':'#34d399',
+  'The Bronx':'#f87171','Bronx':'#f87171','Staten Island':'#fbbf24',
 };
 
 fetch('https://data.cityofnewyork.us/api/geospatial/7t3b-ywvw?method=export&type=GeoJSON')
@@ -745,37 +1047,107 @@ fetch('https://data.cityofnewyork.us/api/geospatial/7t3b-ywvw?method=export&type
   .then(geojson => {
     L.geoJSON(geojson, {
       style: f => {
-        const name  = f.properties.boro_name || f.properties.name || '';
+        const name = f.properties.boro_name || f.properties.name || '';
         const color = BOROUGH_PALETTE[name] || '#888';
-        return { color, weight:1.8, opacity:0.5, fillColor:color, fillOpacity:0.07, dashArray:'5 4' };
+        return { color, weight:1.5, opacity:0.4, fillColor:color, fillOpacity:0.04, dashArray:'5 4' };
       },
       onEachFeature: (f, layer) => {
         const name = f.properties.boro_name || f.properties.name || '';
         if (name) layer.bindTooltip(name, { permanent:true, direction:'center', className:'borough-label' });
       },
     }).addTo(map);
-  })
-  .catch(() => {}); // fail silently if blocked
+  }).catch(() => {});
 
 // ── PINS ──────────────────────────────────────────────────────────────────
-function makeIcon(p) {
-  const c = COLORS[p.category];
+function makeIcon(p, color) {
+  const c = color || COLORS[p.category] || '#8b97b0';
   return L.divIcon({
     className: '',
     html: `<div class="pin-wrap">
-             <div class="pin-circle" style="background:${c}">${p.emoji}</div>
+             <div class="pin-circle" style="background:${c}">${p.emoji || '📍'}</div>
              <div class="pin-tail"   style="background:${c}"></div>
            </div>`,
-    iconSize:   [30, 38],
-    iconAnchor: [15, 38],
+    iconSize: [30,38], iconAnchor: [15,38],
   });
 }
 
-const markerMap = new Map();
-places.forEach(p => {
-  const m = L.marker([p.lat, p.lng], { icon:makeIcon(p) }).addTo(map);
-  m.on('click', () => openPopup(p));
-  markerMap.set(p.id, { marker:m, place:p });
+// Track all markers for filter
+const markerMap = new Map(); // id -> { marker, place, isCustom }
+
+function addMarker(p, isCustom) {
+  const m = L.marker([p.lat, p.lng], { icon: makeIcon(p) }).addTo(map);
+  m.on('click', () => openPopup(p, isCustom));
+  markerMap.set(p.id, { marker:m, place:p, isCustom });
+}
+
+// Add hardcoded places
+places.forEach(p => addMarker(p, false));
+// Add hotel
+addMarker(HOTEL, false);
+
+// ── RIGHT SIDEBAR: places list ─────────────────────────────────────────────
+const placesScroll = document.getElementById('places-scroll');
+
+function renderSidebarPlaces(customPlaces) {
+  placesScroll.innerHTML = '';
+
+  // Section: hardcoded
+  const lbl1 = document.createElement('div');
+  lbl1.className = 'sr-section-label';
+  lbl1.textContent = 'Trip Places';
+  placesScroll.appendChild(lbl1);
+
+  // Hotel first
+  placesScroll.appendChild(makePlaceRow(HOTEL, false));
+  places.forEach(p => placesScroll.appendChild(makePlaceRow(p, false)));
+
+  // Section: custom (from Firebase)
+  if (customPlaces.length > 0) {
+    const lbl2 = document.createElement('div');
+    lbl2.className = 'sr-section-label';
+    lbl2.style.marginTop = '8px';
+    lbl2.textContent = 'Added by You';
+    placesScroll.appendChild(lbl2);
+    customPlaces.forEach(p => placesScroll.appendChild(makePlaceRow(p, true)));
+  }
+}
+
+function makePlaceRow(p, isCustom) {
+  const row = document.createElement('div');
+  row.className = 'place-row';
+  const color = COLORS[p.category] || '#8b97b0';
+  row.innerHTML = `
+    <div class="place-dot" style="background:${color}"></div>
+    <span class="place-row-emoji">${p.emoji || '📍'}</span>
+    <div class="place-row-info">
+      <div class="place-row-name">${p.name}</div>
+      <div class="place-row-meta">${p.category}${isCustom && p.person ? ` · ${p.person}` : ''}</div>
+    </div>
+  `;
+  row.addEventListener('click', () => {
+    map.setView([p.lat, p.lng], 15, { animate:true });
+    openPopup(p, isCustom);
+  });
+  return row;
+}
+
+// ── FIREBASE: custom places listener ──────────────────────────────────────
+let customPlaces = [];
+
+db.ref('places').on('value', snapshot => {
+  // Remove old custom markers
+  markerMap.forEach((v, id) => {
+    if (v.isCustom) { map.removeLayer(v.marker); markerMap.delete(id); }
+  });
+
+  customPlaces = [];
+  snapshot.forEach(child => {
+    const p = { id: child.key, ...child.val() };
+    customPlaces.push(p);
+    if (p.lat && p.lng) addMarker(p, true);
+  });
+
+  renderSidebarPlaces(customPlaces);
 });
 
 // ── POPUP ─────────────────────────────────────────────────────────────────
@@ -783,23 +1155,24 @@ const overlay  = document.getElementById('popup-overlay');
 const popCard  = document.getElementById('popup-card');
 const closeBtn = document.getElementById('popup-close');
 
-function openPopup(p) {
-  popCard.className = `popup-card ${p.category}`;
+function openPopup(p, isCustom) {
+  const cat = p.category || 'custom';
+  popCard.className = `popup-card ${cat}`;
   document.getElementById('popup-name').textContent    = p.name;
-  document.getElementById('popup-address').textContent = p.address;
-  document.getElementById('popup-note').innerHTML      = p.note;
-  document.getElementById('popup-rating').textContent  = p.rating;
-  document.getElementById('popup-map-btn').href        = p.mapsUrl;
+  document.getElementById('popup-address').textContent = p.address || '';
+  document.getElementById('popup-note').innerHTML      = p.note || (isCustom ? `Added by <strong>${p.person || 'someone'}</strong>` : '');
+  document.getElementById('popup-rating').textContent  = p.rating || '';
+  document.getElementById('popup-map-btn').href        = p.mapsUrl || `https://maps.google.com/?q=${encodeURIComponent(p.name)}`;
 
   const tag = document.getElementById('popup-tag');
-  tag.textContent = p.category[0].toUpperCase() + p.category.slice(1);
-  tag.className   = `tag ${p.category}`;
+  tag.textContent = cat[0].toUpperCase() + cat.slice(1);
+  tag.className   = `tag ${cat}`;
 
   document.getElementById('popup-img-area').innerHTML = p.img
     ? `<img class="popup-img" src="${p.img}" alt="${p.name}"
             onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-       <div class="popup-img-placeholder" style="display:none">${p.emoji}</div>`
-    : `<div class="popup-img-placeholder">${p.emoji}</div>`;
+       <div class="popup-img-placeholder" style="display:none">${p.emoji || '📍'}</div>`
+    : `<div class="popup-img-placeholder">${p.emoji || '📍'}</div>`;
 
   document.getElementById('popup-banner-area').innerHTML = p.banner
     ? `<div class="popup-banner">${p.banner}</div>` : '';
@@ -811,7 +1184,7 @@ function openPopup(p) {
 function closePopup() { overlay.classList.remove('visible'); }
 closeBtn.addEventListener('click', closePopup);
 overlay.addEventListener('click', e => { if (e.target === overlay) closePopup(); });
-document.addEventListener('keydown', e => { if (e.key === 'Escape') closePopup(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { closePopup(); closeAddModal(); } });
 
 // ── FILTER ────────────────────────────────────────────────────────────────
 document.querySelectorAll('.filter-btn').forEach(btn => {
@@ -824,6 +1197,80 @@ document.querySelectorAll('.filter-btn').forEach(btn => {
       else map.removeLayer(marker);
     });
   });
+});
+
+// ── ADD PLACE MODAL ───────────────────────────────────────────────────────
+const addOverlay = document.getElementById('add-place-overlay');
+
+document.getElementById('open-add-place').addEventListener('click', () => {
+  addOverlay.classList.add('visible');
+});
+
+function closeAddModal() {
+  addOverlay.classList.remove('visible');
+  document.getElementById('ap-name').value    = '';
+  document.getElementById('ap-address').value = '';
+  document.getElementById('ap-person').value  = '';
+  document.getElementById('ap-error').classList.remove('visible');
+  document.getElementById('ap-submit').disabled = false;
+  document.getElementById('ap-submit').textContent = 'Add to Map →';
+}
+
+document.getElementById('close-add-place').addEventListener('click', closeAddModal);
+addOverlay.addEventListener('click', e => { if (e.target === addOverlay) closeAddModal(); });
+
+document.getElementById('ap-submit').addEventListener('click', async () => {
+  const name     = document.getElementById('ap-name').value.trim();
+  const address  = document.getElementById('ap-address').value.trim();
+  const category = document.getElementById('ap-category').value;
+  const person   = document.getElementById('ap-person').value.trim();
+  const errEl    = document.getElementById('ap-error');
+  const btn      = document.getElementById('ap-submit');
+
+  errEl.classList.remove('visible');
+
+  if (!name || !address) {
+    errEl.textContent = 'Name and address are required.';
+    errEl.classList.add('visible');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Geocoding…';
+
+  try {
+    const geo = await fetch(
+      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address + ', New York')}&limit=1`,
+      { headers: { 'Accept-Language': 'en' } }
+    ).then(r => r.json());
+
+    if (!geo.length) {
+      errEl.textContent = 'Could not find that address. Try being more specific.';
+      errEl.classList.add('visible');
+      btn.disabled = false;
+      btn.textContent = 'Add to Map →';
+      return;
+    }
+
+    const lat = parseFloat(geo[0].lat);
+    const lng = parseFloat(geo[0].lon);
+    const EMOJIS = { food:'🍽️', activity:'🎯', sightsee:'📍' };
+
+    await db.ref('places').push({
+      name, address, category, person,
+      lat, lng,
+      emoji: EMOJIS[category] || '📍',
+      addedAt: Date.now(),
+    });
+
+    closeAddModal();
+    map.setView([lat, lng], 15, { animate:true });
+  } catch {
+    errEl.textContent = 'Something went wrong. Please try again.';
+    errEl.classList.add('visible');
+    btn.disabled = false;
+    btn.textContent = 'Add to Map →';
+  }
 });
 </script>
 </body>
