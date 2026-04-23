@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Day Planner · NYC Trip</title>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
   <style>
     :root {
       --bg:         #0f1117;
@@ -361,7 +363,19 @@
 </div>
 
 <script>
-// ── SHARED DATA ───────────────────────────────────────────────────────────
+// ── FIREBASE ──────────────────────────────────────────────────────────────
+firebase.initializeApp({
+  apiKey: "AIzaSyCe4jMzTvSSmOnvNJwMR3ku7oP89TouXsY",
+  authDomain: "nyc-trip-71a08.firebaseapp.com",
+  databaseURL: "https://nyc-trip-71a08-default-rtdb.firebaseio.com",
+  projectId: "nyc-trip-71a08",
+  storageBucket: "nyc-trip-71a08.firebasestorage.app",
+  messagingSenderId: "770213467859",
+  appId: "1:770213467859:web:f005acc598769aebb5a626"
+});
+const db = firebase.database();
+
+// ── DATA ──────────────────────────────────────────────────────────────────
 const places = [
   { id:1,  category:'food',     name:'Din Tai Fung',            emoji:'🥟' },
   { id:2,  category:'food',     name:'Chinatown Eats',          emoji:'🍜' },
@@ -412,11 +426,9 @@ const params  = new URLSearchParams(location.search);
 const today   = params.get('date') || '2026-04-26';
 const dayInfo = DAYS.find(d => d.date === today) || DAYS[0];
 
-// Header
 document.getElementById('hdr-sub').textContent = `${dayInfo.display} · ${dayInfo.label}`;
 document.title = `${dayInfo.display} · NYC Trip`;
 
-// Day tabs
 const tabsEl = document.getElementById('day-tabs');
 DAYS.forEach(d => {
   const a = document.createElement('a');
@@ -426,26 +438,25 @@ DAYS.forEach(d => {
   tabsEl.appendChild(a);
 });
 
-// ── STORAGE ───────────────────────────────────────────────────────────────
-const STORAGE_KEY = `nyc-schedule-${today}`;
+// ── FIREBASE REF ──────────────────────────────────────────────────────────
+// Each entry stored as: schedule/{date}/{pushKey} = { placeId, hour }
+const scheduleRef = db.ref(`schedule/${today}`);
 
-function loadSchedule() {
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
-  catch { return []; }
-}
-
-function saveSchedule(entries) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
-}
-
-let schedule = loadSchedule(); // [{placeId, hour}]
-
-// ── RENDER SCHEDULE ───────────────────────────────────────────────────────
+// ── RENDER SCHEDULE (called on every Firebase snapshot) ───────────────────
 const schedEl = document.getElementById('schedule');
 
-function renderSchedule() {
-  schedEl.innerHTML = '';
+function renderSchedule(snapshot) {
+  // Build map: hour -> [{key, placeId}]
+  const byHour = {};
+  HOURS.forEach(h => byHour[h] = []);
 
+  snapshot.forEach(child => {
+    const { placeId, hour } = child.val();
+    if (byHour[hour]) byHour[hour].push({ key: child.key, placeId });
+  });
+
+  // Clear and rebuild rows (preserve drop listeners by rebuilding)
+  schedEl.innerHTML = '';
   HOURS.forEach(hour => {
     const row = document.createElement('div');
     row.className = 'hour-row';
@@ -458,39 +469,28 @@ function renderSchedule() {
     drop.className = 'hour-drop';
     drop.dataset.hour = hour;
 
-    // Render existing chips for this hour
-    schedule.filter(e => e.hour === hour).forEach(entry => {
-      drop.appendChild(makeChip(entry));
-    });
+    byHour[hour].forEach(entry => drop.appendChild(makeChip(entry)));
 
-    // Drag-over highlight
-    drop.addEventListener('dragover', e => {
-      e.preventDefault();
-      drop.classList.add('drag-over');
-    });
+    drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('drag-over'); });
     drop.addEventListener('dragleave', () => drop.classList.remove('drag-over'));
-
-    // Drop
     drop.addEventListener('drop', e => {
       e.preventDefault();
       drop.classList.remove('drag-over');
       const placeId = parseInt(e.dataTransfer.getData('placeId'), 10);
       if (!placeId) return;
-      const entry = { placeId, hour };
-      schedule.push(entry);
-      saveSchedule(schedule);
-      drop.appendChild(makeChip(entry));
-      updateBadges();
+      scheduleRef.push({ placeId, hour }); // Firebase handles re-render via listener
     });
 
     row.appendChild(label);
     row.appendChild(drop);
     schedEl.appendChild(row);
   });
+
+  updateBadges(snapshot);
 }
 
-function makeChip(entry) {
-  const place = places.find(p => p.id === entry.placeId);
+function makeChip({ key, placeId }) {
+  const place = places.find(p => p.id === placeId);
   if (!place) return document.createElement('span');
 
   const chip = document.createElement('div');
@@ -501,11 +501,7 @@ function makeChip(entry) {
     <button class="chip-remove" title="Remove">×</button>
   `;
   chip.querySelector('.chip-remove').addEventListener('click', () => {
-    const idx = schedule.findIndex(e => e.placeId === entry.placeId && e.hour === entry.hour);
-    if (idx > -1) schedule.splice(idx, 1);
-    saveSchedule(schedule);
-    chip.remove();
-    updateBadges();
+    scheduleRef.child(key).remove(); // Firebase listener re-renders
   });
   return chip;
 }
@@ -519,36 +515,34 @@ function renderPlaces() {
     const card = document.createElement('div');
     card.className = `place-card ${p.category}`;
     card.draggable = true;
-    card.dataset.placeId = p.id;
-
-    const count = schedule.filter(e => e.placeId === p.id).length;
     card.innerHTML = `
       <span class="place-emoji">${p.emoji}</span>
       <div class="place-info">
         <div class="place-name">${p.name}</div>
         <div class="place-cat">${p.category}</div>
       </div>
-      <span class="place-sched-badge" id="badge-${p.id}">${count > 0 ? '✓'.repeat(count) : ''}</span>
+      <span class="place-sched-badge" id="badge-${p.id}"></span>
     `;
-
-    card.addEventListener('dragstart', e => {
-      e.dataTransfer.setData('placeId', p.id);
-      card.classList.add('dragging');
-    });
+    card.addEventListener('dragstart', e => { e.dataTransfer.setData('placeId', p.id); card.classList.add('dragging'); });
     card.addEventListener('dragend', () => card.classList.remove('dragging'));
-
     listEl.appendChild(card);
   });
 }
 
-function updateBadges() {
+function updateBadges(snapshot) {
+  const counts = {};
+  snapshot.forEach(child => {
+    const { placeId } = child.val();
+    counts[placeId] = (counts[placeId] || 0) + 1;
+  });
   places.forEach(p => {
     const badge = document.getElementById(`badge-${p.id}`);
-    if (!badge) return;
-    const count = schedule.filter(e => e.placeId === p.id).length;
-    badge.textContent = count > 0 ? '✓'.repeat(Math.min(count, 3)) : '';
+    if (badge) badge.textContent = counts[p.id] ? '✓'.repeat(Math.min(counts[p.id], 3)) : '';
   });
 }
+
+// ── REAL-TIME LISTENER — fires on load + every change ─────────────────────
+scheduleRef.on('value', snapshot => renderSchedule(snapshot));
 
 // ── WEATHER ───────────────────────────────────────────────────────────────
 (async () => {
@@ -577,7 +571,6 @@ function updateBadges() {
 })();
 
 // ── BOOT ──────────────────────────────────────────────────────────────────
-renderSchedule();
 renderPlaces();
 </script>
 </body>
