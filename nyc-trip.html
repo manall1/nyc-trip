@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NYC Trip ✈️</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0e0e0e;
+    --card: #161616;
+    --border: #2a2a2a;
+    --accent: #f5c842;
+    --accent2: #e8715a;
+    --accent3: #6ec6b0;
+    --text: #f0ede6;
+    --muted: #7a7570;
+    --food: #e8715a;
+    --activity: #6ec6b0;
+    --sightsee: #f5c842;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+  }
+
+  /* HEADER */
+  header {
+    position: relative;
+    padding: 60px 40px 40px;
+    border-bottom: 1px solid var(--border);
+    overflow: hidden;
+  }
+
+  header::before {
+    content: '';
+    position: absolute;
+    top: -80px; left: -80px;
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(245,200,66,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .header-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+
+  .title-block h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2.4rem, 5vw, 4rem);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.05;
+  }
+
+  .title-block h1 em {
+    font-style: italic;
+    color: var(--accent);
+  }
+
+  .title-block p {
+    margin-top: 10px;
+    color: var(--muted);
+    font-size: 0.95rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .legend {
+    display: flex;
+    gap: 18px;
+    flex-wrap: wrap;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.8rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .dot {
+    width: 9px; height: 9px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* MAIN */
+  main {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 50px 40px 80px;
+  }
+
+  .section-label {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 28px;
+    margin-top: 52px;
+  }
+
+  .section-label:first-child { margin-top: 0; }
+
+  .section-label .dot-lg {
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .section-label h2 {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .section-label .line {
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* CARDS GRID */
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+  }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.2s ease, border-color 0.2s ease;
+    cursor: default;
+  }
+
+  .card:hover {
+    transform: translateY(-3px);
+  }
+
+  .card.food:hover { border-color: var(--food); }
+  .card.activity:hover { border-color: var(--activity); }
+  .card.sightsee:hover { border-color: var(--sightsee); }
+
+  .card-img {
+    width: 100%;
+    height: 190px;
+    object-fit: cover;
+    display: block;
+    background: #1e1e1e;
+  }
+
+  .card-img-placeholder {
+    width: 100%;
+    height: 190px;
+    background: linear-gradient(135deg, #1e1e1e 0%, #252525 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+  }
+
+  .card-body {
+    padding: 18px 20px 20px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .card-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .card-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    line-height: 1.25;
+  }
+
+  .tag {
+    font-size: 0.65rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 3px 9px;
+    border-radius: 20px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .tag.food { background: rgba(232,113,90,0.15); color: var(--food); }
+  .tag.activity { background: rgba(110,198,176,0.15); color: var(--activity); }
+  .tag.sightsee { background: rgba(245,200,66,0.15); color: var(--sightsee); }
+
+  .card-address {
+    font-size: 0.78rem;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+
+  .card-note {
+    font-size: 0.82rem;
+    color: #8a8580;
+    line-height: 1.5;
+    margin-top: 2px;
+    flex: 1;
+  }
+
+  .card-note .highlight {
+    color: var(--accent);
+    font-weight: 500;
+  }
+
+  .card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+  }
+
+  .rating {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.78rem;
+    color: var(--muted);
+  }
+
+  .rating .star { color: var(--accent); }
+
+  .map-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-decoration: none;
+    padding: 5px 12px;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    transition: all 0.18s ease;
+  }
+
+  .card.food .map-btn:hover { border-color: var(--food); color: var(--food); }
+  .card.activity .map-btn:hover { border-color: var(--activity); color: var(--activity); }
+  .card.sightsee .map-btn:hover { border-color: var(--sightsee); color: var(--sightsee); }
+
+  /* NOTE BANNER */
+  .note-banner {
+    background: rgba(232,113,90,0.07);
+    border: 1px solid rgba(232,113,90,0.2);
+    border-radius: 10px;
+    padding: 14px 18px;
+    font-size: 0.82rem;
+    color: #c47060;
+    line-height: 1.5;
+    margin-bottom: 28px;
+  }
+
+  .note-banner strong { color: var(--food); }
+
+  @media (max-width: 600px) {
+    header, main { padding-left: 20px; padding-right: 20px; }
+    .cards { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="title-block">
+      <h1>New York <em>City</em></h1>
+      <p>Your personal trip list &nbsp;·&nbsp; Places to hit</p>
+    </div>
+    <div class="legend">
+      <div class="legend-item"><div class="dot" style="background:var(--food)"></div> Food</div>
+      <div class="legend-item"><div class="dot" style="background:var(--activity)"></div> Activity</div>
+      <div class="legend-item"><div class="dot" style="background:var(--sightsee)"></div> Sightsee</div>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <!-- FOOD -->
+  <div class="section-label">
+    <div class="dot-lg" style="background:var(--food)"></div>
+    <h2>Food</h2>
+    <div class="line"></div>
+  </div>
+
+  <div class="note-banner">
+    <strong>Halal heads-up:</strong> Most of Chinatown is not halal. Din Tai Fung is not halal-certified but is pork-free on some items — check the menu carefully. Great halal options nearby: Halal Guys, Mamouns Falafel, or explore the halal food carts around Midtown.
+  </div>
+
+  <div class="cards">
+
+    <div class="card food">
+      <img class="card-img" src="https://lh3.googleusercontent.com/place-photos/AJRVUZMCNsEqmKqzXN9ZdcHNkCP5ArgNCk9gpW38GSsHZEbum-Rp72ROLifqo8tcCLobIi2fovLRm7GD7Xpdy0DX7W9Qps_SdCreCsLncI73Cy2Rqyq3k_T0fgx__iFskhhuXe7ETZs1_Ykcv5mCrA=s800-w800-h600" alt="Din Tai Fung" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+      <div class="card-img-placeholder" style="display:none">🥟</div>
+      <div class="card-body">
+        <div class="card-top">
+          <div class="card-name">Din Tai Fung</div>
+          <span class="tag food">Food</span>
+        </div>
+        <div class="card-address">1633 Broadway, Midtown Manhattan</div>
+        <div class="card-note">World-famous Taiwanese soup dumplings (XLB). Try the chicken dumplings & chocolate XLB for dessert. <span class="highlight">Get on the waitlist early — gets very packed.</span></div>
+        <div class="card-footer">
+          <div class="rating"><span class="star">★</span> 4.3 · Taiwanese</div>
+          <a class="map-btn" href="https://maps.google.com/?cid=9042869628820017021" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="card food">
+      <div class="card-img-placeholder">🍜</div>
+      <div class="card-body">
+        <div class="card-top">
+          <div class="card-name">Chinatown Eats</div>
+          <span class="tag food">Food</span>
+        </div>
+        <div class="card-address">Canal St area, Manhattan Chinatown</div>
+        <div class="card-note">Wander for bubble tea, egg tarts, and bao. <span class="highlight">Most spots are not halal</span> — stick to vegetarian options or pre-check. Good picks: egg custard tarts, scallion pancakes, mango drinks.</div>
+        <div class="card-footer">
+          <div class="rating"><span class="star">★</span> Explore &amp; graze</div>
+          <a class="map-btn" href="https://maps.google.com/?q=Chinatown+NYC" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ACTIVITIES -->
+  <div class="section-label">
+    <div class="dot-lg" style="background:var(--activity)"></div>
+    <h2>Activities</h2>
+    <div class="line"></div>
+  </div>
+
+  <div class="cards">
+
+    <div class="card activity">
+      <img class="card-img" src="https://lh3.googleusercontent.com/place-photos/AJRVUZMCNsEqmKqzXN9ZdcHNkCP5ArgNCk9gpW38GSsHZEbum-Rp72ROLifqo8tcCLobIi2fovLRm7GD7Xpdy0DX7W9Qps_SdCreCsLncI73Cy2Rqyq3k_T0fgx__iFskhhuXe7ETZs1_Ykcv5mCrA=s800" alt="" style="display:none">
+      <div class="card-img-placeholder">🚡</div>
+      <div class="card-body">
+        <div class="card-top">
+          <div class="card-name">Roosevelt Island Tramway</div>
+          <span class="tag activity">Activity</span>
+        </div>
+        <div class="card-address">254 E 60th St, Upper East Side</div>
+        <div class="card-note">An aerial cable car right over the East River. <span class="highlight">Do this at night</span> — the city lights are magical. Same price as the subway (~$2.90) with your MetroCard.</div>
+        <div class="card-footer">
+          <div class="rating"><span class="star">★</span> 4.7 · 🌙 Night recommended</div>
+          <a class="map-btn" href="https://maps.google.com/?cid=17296483083023729155" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="card activity">
+      <img class="card-img" src="https://lh3.googleusercontent.com/place-photos/AJRVUZM7ApeCi__vum-tdOt8P_eKdMBS2d8HifuLrKw8p2JVWSf7b4jRytZAg61gTjFbd3XhUxPkUMOxSVLvMGwqSwU4C_EC1aYSpO53uDWF_yy0XYa_siz8795US2z3JmeWk-lWLBesCNdBJyHzdyQ=s800-w800-h600" alt="Pikchi Photobooth" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+      <div class="card-img-placeholder" style="display:none">📸</div>
+      <div class="card-body">
+        <div class="card-top">
+          <div class="card-name">Pikchi Photobooth</div>
+          <span class="tag activity">Activity</span>
+        </div>
+        <div class="card-address">102 Eldridge St, Chinatown / LES</div>
+        <div class="card-note">3 themed booths: grocery store, elevator, telephone. Walk-in, no reservation needed. <span class="highlight">$12–15 for 2 strips + keychain option.</span> Open until 10pm Fri–Sat.</div>
+        <div class="card-footer">
+          <div class="rating"><span class="star">★</span> 4.8 · 📍 Chinatown</div>
+          <a class="map-btn" href="https://maps.google.com/?cid=10060015174988668270" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="card activity">
+      <img class="card-img" src="https://lh3.googleusercontent.com/place-photos/AJRVUZMhOJCx260ESGEYwS7dcMmyb7uA4Em9tQ5vNsoYOKDpdQh84uaUQaRMbn29Yk2xw3uHOpWPOx-Rxr9kOUrk395H6Q2zxLfEfiVVFypDVAK8_-x7_8Kzm0M-z60diam_rksmNjNFWPC94bMQsBY=s800-w800-h600" alt="Autophoto" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+      <div class="card-img-placeholder" style="display:none">🎞️</div>
+      <div class="card-body">
+        <div class="card-top">
+          <div class="card-name">AUTOPHOTO Gallery</div>
+          <span class="tag activity">Activity</span>
+        </div>
+        <div class="card-address">121 Orchard St, Lower East Side</div>
+        <div class="card-note">Vintage photobooth museum with 8+ working booths. <span class="highlight">Free entry</span>, $8–12 per booth. 5-star rated — the staff narrate the history of each booth. A must if you love photobooths. Closed Mondays.</div>
+        <div class="card-footer">
+          <div class="rating"><span class="star">★</span> 5.0 · 🎞️ LES</div>
+          <a class="map-btn" href="https://maps.google.com/?cid=7714283813248372139" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="card activity">
+      <div class="card-img-placeholder">⛴️</div>
+      <div class="card-body">
+        <div class="card-top">
+          <div class="card-name">NYC Ferry Ride</div>
+          <span class="tag activity">Activity</span>
+        </div>
+        <div class="card-address">Multiple piers, East River & Hudson</div>
+        <div class="card-note">Only $4.50 — best value view in the city. <span class="highlight">Take it at dusk</span> to see One World Trade lit up across the water. East River route is the most scenic. Book nothing, just show up.</div>
+        <div class="card-footer">
+          <div class="rating"><span class="star">★</span> 4.6 · $4.50 flat</div>
+          <a class="map-btn" href="https://maps.google.com/?cid=18459568455898400516" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="card activity">
+      <img class="card-img" src="https://lh3.googleusercontent.com/place-photos/AJRVUZNAgekSLxDI2vVyizZiwt_xvhg7Z09slRZOjVLmJp3Xi5afo-iVQE4udvzCOcV_ppN71nRwSzmqntkgwSf96EUK1zSrT3kx9AyzcHNEJ3AvB_4XirrMwkG_pw5BHOG3YnOIZF8lSYeVqhUSvg=s800-w800-h600" alt="Summit One Vanderbilt" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+      <div class="card-img-placeholder" style="display:none">🏙️</div>
+      <div class="card-body">
+        <div class="card-top">
+          <div class="card-name">SUMMIT One Vanderbilt</div>
+          <span class="tag activity">Activity</span>
+        </div>
+        <div class="card-address">45 E 42nd St, Midtown</div>
+        <div class="card-note">Immersive observation experience: glass floors, balloon room, mirror infinity rooms. <span class="highlight">Book early AM for empty photo ops</span> (8–9am slot). Open until midnight most nights. Requires tickets.</div>
+        <div class="card-footer">
+          <div class="rating"><span class="star">★</span> 4.7 · Book in advance</div>
+          <a class="map-btn" href="https://maps.google.com/?cid=13577862127041110382" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="card activity">
+      <img class="card-img" src="https://lh3.googleusercontent.com/place-photos/AJRVUZOXy_YLZZLcgbAjsT3ypRVQ5iZd_bUkRT0RbWZ2hzaB9To-FHHyMqSOt7JFyog-PQX47XauR6BIu1B1zunNYOvC53A01STUnaC4SVwo1k1GlSxgXQ81gubRPVY0otLCVfQicqvn42FMZIjAves=s800-w750-h500" alt="The Edge" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+      <div class="card-img-placeholder" style="display:none">🌆</div>
+      <div class="card-body">
+        <div class="card-top">
+          <div class="card-name">The Edge — Hudson Yards</div>
+          <span class="tag activity">Activity</span>
+        </div>
+        <div class="card-address">30 Hudson Yards, West Side</div>
+        <div class="card-note">Highest outdoor sky deck in NYC — glass floor, 360° views, Hudson River on one side &amp; the whole skyline on the other. <span class="highlight">Sunset slot is the move.</span> Buy tickets online to skip the line.</div>
+        <div class="card-footer">
+          <div class="rating"><span class="star">★</span> 4.6 · Outdoor deck</div>
+          <a class="map-btn" href="https://maps.google.com/?cid=14024044649099225455" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- SIGHTSEE -->
+  <div class="section-label">
+    <div class="dot-lg" style="background:var(--sightsee)"></div>
+    <h2>Sightsee</h2>
+    <div class="line"></div>
+  </div>
+
+  <div class="cards">
+
+    <div class="card sightsee">
+      <img class="card-img" src="https://lh3.googleusercontent.com/place-photos/AJRVUZMsHUdgMLRzIJbQiJ-ltmyAvUSIj2rcBY2dBitQEi_y5OXaxBh_P-NSBrQhMrjihBfMPqf5idlx_Ut4tVVCAcfFVeWW7Xw0JG8ecjmHmI84tuSTnfrmamGc0wcJw7Jo63dBk2VQskOCsp9xSg=s800-w800-h600" alt="Brooklyn Bridge" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+      <div class="card-img-placeholder" style="display:none">🌉</div>
+      <div class="card-body">
+        <div class="card-top">
+          <div class="card-name">Brooklyn Bridge</div>
+          <span class="tag sightsee">Sightsee</span>
+        </div>
+        <div class="card-address">Connecting Manhattan & Brooklyn</div>
+        <div class="card-note">Walk the 1.3-mile pedestrian path for iconic skyline views. <span class="highlight">Go early morning for fewer crowds.</span> Pair with a DUMBO walk right after — Washington St. gives the best framed shot of the bridge.</div>
+        <div class="card-footer">
+          <div class="rating"><span class="star">★</span> 4.8 · Free · 30–45 min walk</div>
+          <a class="map-btn" href="https://maps.google.com/?cid=14347003905124695845" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="card sightsee">
+      <img class="card-img" src="https://lh3.googleusercontent.com/place-photos/AJRVUZMtEPjlRseze7-zp4tHtxuJiPAAq0rfKKeW3Ycu2PeM2eDfqy44W9E9oHKvIiCer2y1TEkUWJcKZSq4Ziqig9BDTe7pdByB70tHRN8rJ26G1R1psHLQCzW4iC9h1C1gJafperD0qUE2f5jLO2I=s800-w800-h600" alt="DUMBO" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+      <div class="card-img-placeholder" style="display:none">🏛️</div>
+      <div class="card-body">
+        <div class="card-top">
+          <div class="card-name">DUMBO, Brooklyn</div>
+          <span class="tag sightsee">Sightsee</span>
+        </div>
+        <div class="card-address">Washington St & Water St, Brooklyn</div>
+        <div class="card-note">One of NYC's most photogenic neighbourhoods. The cobblestone streets frame the bridge perfectly. <span class="highlight">Washington St is the shot everyone comes for.</span> Great cafés and waterfront views nearby.</div>
+        <div class="card-footer">
+          <div class="rating"><span class="star">★</span> 4.8 · Free · Pair with Bridge walk</div>
+          <a class="map-btn" href="https://maps.google.com/?q=DUMBO+Brooklyn+NYC" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="card sightsee">
+      <div class="card-img-placeholder">🛍️</div>
+      <div class="card-body">
+        <div class="card-top">
+          <div class="card-name">Canal Street</div>
+          <span class="tag sightsee">Sightsee</span>
+        </div>
+        <div class="card-address">Canal St, Chinatown / SoHo border</div>
+        <div class="card-note">The chaotic, sensory-overload heart of Chinatown. Knock-off bags, cheap phone cases, bubble tea, and street food vendors. <span class="highlight">Bring cash</span> — many vendors are cash only. Fun to wander, not really a destination.</div>
+        <div class="card-footer">
+          <div class="rating"><span class="star">★</span> 4.5 · Free · Bring cash</div>
+          <a class="map-btn" href="https://maps.google.com/?cid=5113620975249408713" target="_blank">↗ Maps</a>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</main>
+
+</body>
+</html>
